@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockAnnouncements, mockClasses, mockUsers } from '../data/mockData';
@@ -21,7 +20,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { CheckboxItem, CheckboxList } from '@/components/ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, MessageCircle } from 'lucide-react';
 
@@ -34,17 +33,14 @@ const AnnouncementsPage: React.FC = () => {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
 
-  // Get announcements relevant to the current user
   const userAnnouncements = React.useMemo(() => {
     if (!user) return [];
     
     return mockAnnouncements.filter(announcement => {
-      // Check if announcement is for user role
       if (announcement.audience.roles && announcement.audience.roles.includes(user.role)) {
         return true;
       }
       
-      // Check if announcement is for user's class (for students)
       if (announcement.audience.classes && user.role === 'student') {
         const userClass = mockClasses.find(c => c.students.includes(user.id));
         if (userClass && announcement.audience.classes.includes(userClass.id)) {
@@ -52,7 +48,6 @@ const AnnouncementsPage: React.FC = () => {
         }
       }
       
-      // Check if announcement is for specific users
       if (announcement.audience.specific && announcement.audience.specific.includes(user.id)) {
         return true;
       }
@@ -71,18 +66,24 @@ const AnnouncementsPage: React.FC = () => {
       return;
     }
 
-    // This would create a new announcement in a real app
     toast({
       title: 'Announcement created',
       description: 'Your announcement has been posted successfully',
     });
 
-    // Reset form
     setTitle('');
     setContent('');
     setAudienceType('all');
     setSelectedRoles([]);
     setSelectedClasses([]);
+  };
+
+  const handleCheckboxChange = (value: string, selectedArray: string[], setSelectedArray: React.Dispatch<React.SetStateAction<string[]>>) => {
+    if (selectedArray.includes(value)) {
+      setSelectedArray(selectedArray.filter(item => item !== value));
+    } else {
+      setSelectedArray([...selectedArray, value]);
+    }
   };
 
   return (
@@ -167,25 +168,20 @@ const AnnouncementsPage: React.FC = () => {
                   </div>
                   
                   {audienceType === 'roles' && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <label className="block text-sm font-medium">Select Roles</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-4">
                         {['admin', 'teacher', 'student', 'parent'].map(role => (
-                          <div key={role} className="flex items-center">
-                            <input
-                              type="checkbox"
+                          <div key={role} className="flex items-center space-x-2">
+                            <Checkbox
                               id={`role-${role}`}
                               checked={selectedRoles.includes(role)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedRoles([...selectedRoles, role]);
-                                } else {
-                                  setSelectedRoles(selectedRoles.filter(r => r !== role));
-                                }
-                              }}
-                              className="mr-2"
+                              onCheckedChange={() => handleCheckboxChange(role, selectedRoles, setSelectedRoles)}
                             />
-                            <label htmlFor={`role-${role}`}>
+                            <label 
+                              htmlFor={`role-${role}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
                               {role.charAt(0).toUpperCase() + role.slice(1)}
                             </label>
                           </div>
@@ -195,25 +191,20 @@ const AnnouncementsPage: React.FC = () => {
                   )}
                   
                   {audienceType === 'classes' && (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <label className="block text-sm font-medium">Select Classes</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-4">
                         {mockClasses.map(classItem => (
-                          <div key={classItem.id} className="flex items-center">
-                            <input
-                              type="checkbox"
+                          <div key={classItem.id} className="flex items-center space-x-2">
+                            <Checkbox
                               id={`class-${classItem.id}`}
                               checked={selectedClasses.includes(classItem.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedClasses([...selectedClasses, classItem.id]);
-                                } else {
-                                  setSelectedClasses(selectedClasses.filter(c => c !== classItem.id));
-                                }
-                              }}
-                              className="mr-2"
+                              onCheckedChange={() => handleCheckboxChange(classItem.id, selectedClasses, setSelectedClasses)}
                             />
-                            <label htmlFor={`class-${classItem.id}`}>
+                            <label 
+                              htmlFor={`class-${classItem.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
                               {classItem.name} {classItem.section}
                             </label>
                           </div>
