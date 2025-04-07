@@ -11,16 +11,22 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import AudienceSelector from './AudienceSelector';
 import { useAnnouncementForm } from '@/hooks/useAnnouncementForm';
 import { Class } from '@/types';
 
 interface AnnouncementFormProps {
   mockClasses: Class[];
+  onCreateAnnouncement: (title: string, content: string, audience: any) => void;
+  isSubmitting: boolean;
 }
 
-const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ mockClasses }) => {
+const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ 
+  mockClasses,
+  onCreateAnnouncement,
+  isSubmitting
+}) => {
   const {
     title,
     setTitle,
@@ -32,9 +38,29 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ mockClasses }) => {
     selectedClasses,
     handleRoleChange,
     handleClassChange,
-    handleCreateAnnouncement,
     isSubmitDisabled
   } = useAnnouncementForm({ mockClasses });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    let audience = {};
+    
+    if (audienceType === 'all') {
+      audience = { roles: ['admin', 'teacher', 'student', 'parent'] };
+    } else if (audienceType === 'roles') {
+      audience = { roles: selectedRoles };
+    } else if (audienceType === 'classes') {
+      audience = { classes: selectedClasses };
+    }
+    
+    onCreateAnnouncement(title, content, audience);
+    
+    // Reset form
+    setTitle('');
+    setContent('');
+    setAudienceType('all');
+  };
 
   return (
     <Card>
@@ -45,7 +71,7 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ mockClasses }) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
             <label className="block text-sm font-medium mb-1">Title</label>
             <Input
@@ -91,11 +117,18 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ mockClasses }) => {
           )}
           
           <Button 
+            type="submit"
             className="w-full" 
-            onClick={handleCreateAnnouncement}
-            disabled={isSubmitDisabled}
+            disabled={isSubmitDisabled || isSubmitting}
           >
-            Post Announcement
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Posting...
+              </>
+            ) : (
+              'Post Announcement'
+            )}
           </Button>
         </form>
       </CardContent>

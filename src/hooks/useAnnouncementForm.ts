@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { Class } from '@/types';
 
 interface UseAnnouncementFormProps {
@@ -8,7 +7,6 @@ interface UseAnnouncementFormProps {
 }
 
 export const useAnnouncementForm = ({ mockClasses }: UseAnnouncementFormProps) => {
-  const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [audienceType, setAudienceType] = useState<'all' | 'roles' | 'classes'>('all');
@@ -23,27 +21,9 @@ export const useAnnouncementForm = ({ mockClasses }: UseAnnouncementFormProps) =
     }
   };
 
-  const handleCreateAnnouncement = () => {
-    if (!title || !content) {
-      toast({
-        title: 'Missing fields',
-        description: 'Please fill in both title and content',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    toast({
-      title: 'Announcement created',
-      description: 'Your announcement has been posted successfully',
-    });
-
-    setTitle('');
-    setContent('');
-    setAudienceType('all');
-    setSelectedRoles([]);
-    setSelectedClasses([]);
-  };
+  const isSubmitDisabled = !title || !content || 
+                         (audienceType === 'roles' && selectedRoles.length === 0) || 
+                         (audienceType === 'classes' && selectedClasses.length === 0);
 
   return {
     title,
@@ -56,7 +36,6 @@ export const useAnnouncementForm = ({ mockClasses }: UseAnnouncementFormProps) =
     selectedClasses,
     handleRoleChange: (role: string) => handleCheckboxChange(role, selectedRoles, setSelectedRoles),
     handleClassChange: (classId: string) => handleCheckboxChange(classId, selectedClasses, setSelectedClasses),
-    handleCreateAnnouncement,
-    isSubmitDisabled: !title || !content
+    isSubmitDisabled
   };
 };
