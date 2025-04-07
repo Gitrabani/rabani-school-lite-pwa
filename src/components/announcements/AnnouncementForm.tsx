@@ -1,6 +1,5 @@
 
-import React, { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle } from 'lucide-react';
 import AudienceSelector from './AudienceSelector';
+import { useAnnouncementForm } from '@/hooks/useAnnouncementForm';
 import { Class } from '@/types';
 
 interface AnnouncementFormProps {
@@ -21,42 +21,20 @@ interface AnnouncementFormProps {
 }
 
 const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ mockClasses }) => {
-  const { toast } = useToast();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [audienceType, setAudienceType] = useState<'all' | 'roles' | 'classes'>('all');
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-
-  const handleCheckboxChange = (value: string, selectedArray: string[], setSelectedArray: React.Dispatch<React.SetStateAction<string[]>>) => {
-    if (selectedArray.includes(value)) {
-      setSelectedArray(selectedArray.filter(item => item !== value));
-    } else {
-      setSelectedArray([...selectedArray, value]);
-    }
-  };
-
-  const handleCreateAnnouncement = () => {
-    if (!title || !content) {
-      toast({
-        title: 'Missing fields',
-        description: 'Please fill in both title and content',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    toast({
-      title: 'Announcement created',
-      description: 'Your announcement has been posted successfully',
-    });
-
-    setTitle('');
-    setContent('');
-    setAudienceType('all');
-    setSelectedRoles([]);
-    setSelectedClasses([]);
-  };
+  const {
+    title,
+    setTitle,
+    content,
+    setContent,
+    audienceType,
+    setAudienceType,
+    selectedRoles,
+    selectedClasses,
+    handleRoleChange,
+    handleClassChange,
+    handleCreateAnnouncement,
+    isSubmitDisabled
+  } = useAnnouncementForm({ mockClasses });
 
   return (
     <Card>
@@ -107,15 +85,15 @@ const AnnouncementForm: React.FC<AnnouncementFormProps> = ({ mockClasses }) => {
               mockClasses={mockClasses}
               selectedRoles={selectedRoles}
               selectedClasses={selectedClasses}
-              onRoleChange={(role) => handleCheckboxChange(role, selectedRoles, setSelectedRoles)}
-              onClassChange={(classId) => handleCheckboxChange(classId, selectedClasses, setSelectedClasses)}
+              onRoleChange={handleRoleChange}
+              onClassChange={handleClassChange}
             />
           )}
           
           <Button 
             className="w-full" 
             onClick={handleCreateAnnouncement}
-            disabled={!title || !content}
+            disabled={isSubmitDisabled}
           >
             Post Announcement
           </Button>
