@@ -18,30 +18,44 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit, Trash } from 'lucide-react';
+import { Plus, Search, Edit, Trash, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import UserFormDialog from '@/components/users/UserFormDialog';
 
 // This page should only be accessible by admins
 const UsersPage: React.FC = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [userRole, setUserRole] = useState<'all' | 'admin' | 'teacher' | 'student' | 'parent'>('all');
+  const [users, setUsers] = useState(mockUsers);
+  const [userFormOpen, setUserFormOpen] = useState(false);
 
   // Filter users based on search and role
-  const filteredUsers = mockUsers.filter(user => {
+  const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = userRole === 'all' || user.role === userRole;
     return matchesSearch && matchesRole;
   });
 
-  const handleAddUser = () => {
+  const handleAddUser = (userData: any) => {
+    const newUser = {
+      id: `user-${Date.now()}`,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role as 'admin' | 'teacher' | 'student' | 'parent',
+      profileImage: '', // Default empty profile image
+    };
+    
+    setUsers([...users, newUser]);
+    setUserFormOpen(false);
+    
     toast({
-      title: "Not implemented",
-      description: "The add user functionality would be implemented in a real application.",
+      title: "Success",
+      description: `User ${userData.name} has been created successfully.`,
     });
   };
 
@@ -53,9 +67,12 @@ const UsersPage: React.FC = () => {
   };
 
   const handleDeleteUser = (userId: string) => {
+    // In a real app, you would call an API to delete the user
+    setUsers(users.filter(user => user.id !== userId));
+    
     toast({
-      title: "Not implemented",
-      description: `Deleting user ${userId} would be implemented in a real application.`,
+      title: "User Deleted",
+      description: `User has been removed from the system.`,
     });
   };
 
@@ -72,8 +89,8 @@ const UsersPage: React.FC = () => {
         title="Users Management" 
         description="Manage users in the system"
         actions={
-          <Button onClick={handleAddUser}>
-            <Plus className="mr-2 h-4 w-4" /> Add User
+          <Button onClick={() => setUserFormOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" /> Add User
           </Button>
         }
       />
@@ -168,6 +185,12 @@ const UsersPage: React.FC = () => {
           </Tabs>
         </CardContent>
       </Card>
+      
+      <UserFormDialog 
+        open={userFormOpen} 
+        onOpenChange={setUserFormOpen} 
+        onSubmit={handleAddUser} 
+      />
     </div>
   );
 };
