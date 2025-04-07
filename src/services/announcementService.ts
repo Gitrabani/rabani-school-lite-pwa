@@ -13,14 +13,18 @@ export const fetchAnnouncements = async (): Promise<Announcement[]> => {
     throw error;
   }
   
+  if (!data) {
+    return [];
+  }
+  
   // Transform to our application's Announcement type
   return data.map(item => ({
-    id: item.id,
-    title: item.title,
-    content: item.content,
-    authorId: item.author_id,
-    date: item.created_at,
-    audience: item.audience
+    id: item.id || '',
+    title: item.title || '',
+    content: item.content || '',
+    authorId: item.author_id || '',
+    date: item.created_at || new Date().toISOString(),
+    audience: item.audience || {}
   }));
 };
 
@@ -44,13 +48,17 @@ export const createAnnouncement = async (
     throw error;
   }
   
+  if (!data) {
+    throw new Error('No data returned from announcement creation');
+  }
+  
   return {
-    id: data.id,
-    title: data.title,
-    content: data.content,
-    authorId: data.author_id,
-    date: data.created_at,
-    audience: data.audience
+    id: data.id || '',
+    title: data.title || '',
+    content: data.content || '',
+    authorId: data.author_id || '',
+    date: data.created_at || new Date().toISOString(),
+    audience: data.audience || {}
   };
 };
 

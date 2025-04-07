@@ -4,6 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 import { User as AppUser, UserRole } from '../types';
 import { toast } from '../hooks/use-toast';
+import { Database } from '../integrations/supabase/types';
 
 interface AuthContextType {
   user: AppUser | null;
@@ -57,12 +58,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
+        if (!profileData) {
+          console.error('No profile data found');
+          setUser(null);
+          setIsAuthenticated(false);
+          return;
+        }
+
         // Create AppUser object from auth user and profile data
         const appUser: AppUser = {
           id: session.user.id,
-          name: profileData.full_name,
+          name: profileData.full_name || '',
           email: session.user.email!,
-          role: profileData.role as UserRole,
+          role: (profileData.role as UserRole) || 'student',
           profileImage: profileData.avatar_url || undefined
         };
 
