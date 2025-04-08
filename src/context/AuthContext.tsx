@@ -161,6 +161,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      // Check if user is already logged out
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        console.log('No active session found during logout');
+        // User is already logged out, just update the UI state
+        setUser(null);
+        setIsAuthenticated(false);
+        toast({
+          title: 'Already logged out',
+          description: 'You were already logged out of the system.',
+        });
+        return;
+      }
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -181,6 +195,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       console.error('Unexpected logout error:', error);
+      // Ensure UI state is cleared even if there was an error
+      setUser(null);
+      setIsAuthenticated(false);
       toast({
         title: 'Logout error',
         description: error.message || 'An unexpected error occurred during logout',
