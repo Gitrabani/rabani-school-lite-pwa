@@ -14,7 +14,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-import { UserRole } from '@/types';
+import { UserRole } from '@/context/auth/types';
 
 const SignupForm = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
   const { signup } = useAuth();
