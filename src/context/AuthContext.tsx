@@ -11,7 +11,7 @@ interface AuthContextType {
   user: AppUser | null;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, userData: { fullName: string, role: UserRole }) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -33,6 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change event:', event);
         handleSessionChange(session);
       }
     );
@@ -159,16 +160,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Logout error:', error);
+        toast({
+          title: 'Logout error',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        // Manually clear the state to ensure UI updates immediately
+        setUser(null);
+        setIsAuthenticated(false);
+        toast({
+          title: 'Logged out',
+          description: 'You have been successfully logged out.',
+        });
+      }
+    } catch (error: any) {
+      console.error('Unexpected logout error:', error);
       toast({
         title: 'Logout error',
-        description: error.message,
+        description: error.message || 'An unexpected error occurred during logout',
         variant: 'destructive'
       });
-    } else {
-      setUser(null);
-      setIsAuthenticated(false);
     }
   };
 
