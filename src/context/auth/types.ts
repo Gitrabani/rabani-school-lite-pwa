@@ -1,0 +1,20 @@
+
+import { User as SupabaseUser } from '@supabase/supabase-js';
+import { UserRole } from '../types';
+
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  profileImage?: string;
+}
+
+export interface AuthContextType {
+  user: AppUser | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, userData: { fullName: string, role: UserRole }) => Promise<boolean>;
+  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
