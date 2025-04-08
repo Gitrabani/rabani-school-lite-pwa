@@ -1,7 +1,7 @@
 
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../../integrations/supabase/client';
-import { AppUser } from './types';
+import { AppUser, UserRole } from './types';
 import { toast } from '../../hooks/use-toast';
 
 export async function getUserProfileFromSession(session: Session | null): Promise<AppUser | null> {
@@ -30,7 +30,7 @@ export async function getUserProfileFromSession(session: Session | null): Promis
       id: session.user.id,
       name: profileData.full_name || '',
       email: session.user.email!,
-      role: profileData.role || 'student',
+      role: profileData.role as UserRole || 'student',
       profileImage: profileData.avatar_url || undefined
     };
 
