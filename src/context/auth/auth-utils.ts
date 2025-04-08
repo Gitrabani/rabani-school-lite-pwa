@@ -47,6 +47,16 @@ export async function handleSignup(
   userData: { fullName: string; role: string }
 ): Promise<boolean> {
   try {
+    // Ensure the role is a valid UserRole
+    if (!isValidUserRole(userData.role)) {
+      toast({
+        title: 'Invalid role',
+        description: 'The provided user role is not valid',
+        variant: 'destructive'
+      });
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -81,6 +91,11 @@ export async function handleSignup(
     });
     return false;
   }
+}
+
+// Helper function to validate if a string is a valid UserRole
+function isValidUserRole(role: string): role is UserRole {
+  return ['admin', 'teacher', 'student', 'parent'].includes(role);
 }
 
 export async function handleLogin(email: string, password: string): Promise<boolean> {
