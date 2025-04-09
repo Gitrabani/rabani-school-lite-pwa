@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '../context/auth/AuthProvider';
 import { mockClasses, mockSubjects, mockUsers } from '../data/mockData';
@@ -25,7 +24,6 @@ const ClassesPage: React.FC = () => {
   const [classes, setClasses] = useState<Class[]>(mockClasses);
   const [classFormOpen, setClassFormOpen] = useState(false);
 
-  // Get classes relevant to the current user
   const userClasses = React.useMemo(() => {
     if (!user) return [];
     
