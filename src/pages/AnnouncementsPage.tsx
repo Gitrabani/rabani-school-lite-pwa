@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth/AuthProvider';
 import { mockClasses } from '../data/mockData';
 import PageHeader from '../components/shared/PageHeader';
 import AnnouncementTabs from '../components/announcements/AnnouncementTabs';
