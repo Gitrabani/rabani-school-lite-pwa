@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/auth/AuthProvider';
+import { useAuth } from '../context/AuthContext';
 import { mockClasses, mockSubjects, mockUsers } from '../data/mockData';
 import PageHeader from '../components/shared/PageHeader';
 import {

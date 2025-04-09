@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Menu, Bell, User } from 'lucide-react';
-import { useAuth } from '../../context/auth/AuthProvider';
+import { useAuth } from '@/context/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
