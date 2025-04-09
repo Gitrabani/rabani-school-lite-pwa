@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockClasses, mockSubjects, mockUsers } from '../data/mockData';
 import PageHeader from '../components/shared/PageHeader';
@@ -16,28 +16,51 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Users, BookOpen, GraduationCap, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import ClassFormDialog from '@/components/classes/ClassFormDialog';
+import { Class } from '@/types';
 
 const ClassesPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [classes, setClasses] = useState<Class[]>(mockClasses);
+  const [classFormOpen, setClassFormOpen] = useState(false);
 
   // Get classes relevant to the current user
   const userClasses = React.useMemo(() => {
     if (!user) return [];
     
     if (user.role === 'admin') {
-      return mockClasses;
+      return classes;
     } else if (user.role === 'teacher') {
-      return mockClasses.filter(c => c.teacherId === user.id);
+      return classes.filter(c => c.teacherId === user.id);
     }
     
-    return mockClasses.filter(c => c.students.includes(user.id));
-  }, [user]);
+    return classes.filter(c => c.students.includes(user.id));
+  }, [user, classes]);
 
-  const handleAddClass = () => {
+  const handleAddClass = (classData: any) => {
+    const newClass: Class = {
+      id: `class-${Date.now()}`,
+      name: classData.name,
+      section: classData.section,
+      teacherId: classData.teacherId || undefined,
+      students: [],
+      subjects: [],
+    };
+    
+    setClasses([...classes, newClass]);
+    setClassFormOpen(false);
+    
+    toast({
+      title: "Success",
+      description: `Class ${classData.name} ${classData.section} has been created successfully.`,
+    });
+  };
+
+  const handleManageClass = (classId: string) => {
     toast({
       title: "Not implemented",
-      description: "Adding a new class would be implemented in a real application.",
+      description: `Managing class ${classId} would be implemented in a real application.`,
     });
   };
 
@@ -48,7 +71,7 @@ const ClassesPage: React.FC = () => {
         description="Manage and view classes" 
         actions={
           user?.role === 'admin' ? (
-            <Button onClick={handleAddClass}>
+            <Button onClick={() => setClassFormOpen(true)}>
               <Plus className="mr-2 h-4 w-4" /> Add Class
             </Button>
           ) : undefined
@@ -114,7 +137,13 @@ const ClassesPage: React.FC = () => {
                   </CardContent>
                   {user?.role === 'admin' && (
                     <CardFooter className="justify-end">
-                      <Button variant="outline" size="sm">Manage</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleManageClass(classItem.id)}
+                      >
+                        Manage
+                      </Button>
                     </CardFooter>
                   )}
                 </Card>
@@ -149,7 +178,13 @@ const ClassesPage: React.FC = () => {
                           <span className="text-sm">{subjectCount} subject{subjectCount !== 1 ? 's' : ''}</span>
                         </div>
                         {user?.role === 'admin' && (
-                          <Button variant="outline" size="sm">Manage</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleManageClass(classItem.id)}
+                          >
+                            Manage
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -160,6 +195,12 @@ const ClassesPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <ClassFormDialog 
+        open={classFormOpen} 
+        onOpenChange={setClassFormOpen} 
+        onSubmit={handleAddClass} 
+      />
     </div>
   );
 };
