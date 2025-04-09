@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockClasses, mockSubjects, mockUsers } from '../data/mockData';
@@ -13,9 +14,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Users, BookOpen, GraduationCap, Plus } from 'lucide-react';
+import { Users, BookOpen, GraduationCap, Plus, Grid, List } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ClassFormDialog from '@/components/classes/ClassFormDialog';
+import ClassDetail from '@/components/classes/ClassDetail';
 import { Class } from '@/types';
 
 const ClassesPage: React.FC = () => {
@@ -23,6 +25,7 @@ const ClassesPage: React.FC = () => {
   const { toast } = useToast();
   const [classes, setClasses] = useState<Class[]>(mockClasses);
   const [classFormOpen, setClassFormOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
   const userClasses = React.useMemo(() => {
     if (!user) return [];
@@ -56,10 +59,18 @@ const ClassesPage: React.FC = () => {
   };
 
   const handleManageClass = (classId: string) => {
-    toast({
-      title: "Not implemented",
-      description: `Managing class ${classId} would be implemented in a real application.`,
-    });
+    const classToManage = classes.find(c => c.id === classId);
+    if (classToManage) {
+      setSelectedClass(classToManage);
+    }
+  };
+
+  const handleUpdateClass = (updatedClass: Class) => {
+    setClasses(classes.map(c => c.id === updatedClass.id ? updatedClass : c));
+  };
+
+  const handleCloseClassDetail = () => {
+    setSelectedClass(null);
   };
 
   return (
@@ -78,8 +89,12 @@ const ClassesPage: React.FC = () => {
 
       <Tabs defaultValue="grid">
         <TabsList className="mb-4">
-          <TabsTrigger value="grid">Grid View</TabsTrigger>
-          <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="grid" className="flex items-center">
+            <Grid className="h-4 w-4 mr-1" /> Grid View
+          </TabsTrigger>
+          <TabsTrigger value="list" className="flex items-center">
+            <List className="h-4 w-4 mr-1" /> List View
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="grid">
@@ -90,7 +105,7 @@ const ClassesPage: React.FC = () => {
               const subjects = mockSubjects.filter(s => classItem.subjects.includes(s.id));
               
               return (
-                <Card key={classItem.id}>
+                <Card key={classItem.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <CardTitle>{classItem.name} {classItem.section}</CardTitle>
                     <CardDescription>Class Teacher: {teacherName}</CardDescription>
@@ -123,27 +138,28 @@ const ClassesPage: React.FC = () => {
                         </h4>
                         <div className="flex flex-wrap gap-1">
                           {subjects.length > 0 ? (
-                            subjects.map(subject => (
+                            subjects.slice(0, 3).map(subject => (
                               <Badge key={subject.id} variant="outline">{subject.name}</Badge>
                             ))
                           ) : (
                             <span className="text-sm text-gray-500">No subjects assigned</span>
                           )}
+                          {subjects.length > 3 && (
+                            <Badge variant="outline">+{subjects.length - 3} more</Badge>
+                          )}
                         </div>
                       </div>
                     </div>
                   </CardContent>
-                  {user?.role === 'admin' && (
-                    <CardFooter className="justify-end">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleManageClass(classItem.id)}
-                      >
-                        Manage
-                      </Button>
-                    </CardFooter>
-                  )}
+                  <CardFooter className="justify-end">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleManageClass(classItem.id)}
+                    >
+                      Manage
+                    </Button>
+                  </CardFooter>
                 </Card>
               );
             })}
@@ -160,13 +176,13 @@ const ClassesPage: React.FC = () => {
                   const subjectCount = classItem.subjects.length;
                   
                   return (
-                    <div key={classItem.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div key={classItem.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50">
                       <div>
                         <h3 className="font-medium">{classItem.name} {classItem.section}</h3>
                         <p className="text-sm text-gray-500">Teacher: {teacherName}</p>
                       </div>
                       
-                      <div className="flex mt-2 md:mt-0 space-x-4">
+                      <div className="flex mt-2 md:mt-0 space-x-4 items-center">
                         <div className="flex items-center">
                           <Users className="h-4 w-4 mr-1 text-gray-500" />
                           <span className="text-sm">{studentCount} student{studentCount !== 1 ? 's' : ''}</span>
@@ -175,15 +191,13 @@ const ClassesPage: React.FC = () => {
                           <BookOpen className="h-4 w-4 mr-1 text-gray-500" />
                           <span className="text-sm">{subjectCount} subject{subjectCount !== 1 ? 's' : ''}</span>
                         </div>
-                        {user?.role === 'admin' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleManageClass(classItem.id)}
-                          >
-                            Manage
-                          </Button>
-                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleManageClass(classItem.id)}
+                        >
+                          Manage
+                        </Button>
                       </div>
                     </div>
                   );
@@ -199,6 +213,15 @@ const ClassesPage: React.FC = () => {
         onOpenChange={setClassFormOpen} 
         onSubmit={handleAddClass} 
       />
+
+      {selectedClass && (
+        <ClassDetail
+          classData={selectedClass}
+          onUpdate={handleUpdateClass}
+          onClose={handleCloseClassDetail}
+          open={!!selectedClass}
+        />
+      )}
     </div>
   );
 };

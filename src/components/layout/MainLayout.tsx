@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { useAuth } from '../../context/auth/AuthProvider';
+import { useAuth } from '@/context/AuthContext';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
