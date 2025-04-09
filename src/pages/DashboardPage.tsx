@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth/AuthProvider';
 import { mockAnnouncements, mockClasses, mockGrades, mockSubjects, mockUsers } from '../data/mockData';
 import PageHeader from '../components/shared/PageHeader';
 import StatsCard from '../components/dashboard/StatsCard';
