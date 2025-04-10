@@ -29,7 +29,7 @@ const LoginPage: React.FC = () => {
       <div className="max-w-md w-full">
         <AuthHeader 
           title="Create an account" 
-          subtitle="Join our platform to connect with properties and people"
+          subtitle="Welcome to Your School Management System, Access school information and Resource Here, Connecting Students, Parents, and Teachers for a Collaborative Learning journey for School Communication, Update, and Community Engagement, Bringing Our School Community Together: To Access information and Connect"
         />
 
         <Tabs defaultValue="email" onValueChange={setActiveTab} className="w-full">
