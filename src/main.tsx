@@ -4,6 +4,23 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Initialize dark mode based on user preference or saved setting
+const initializeDarkMode = () => {
+  // Check for saved theme or system preference
+  const isDarkMode = localStorage.getItem('theme') === 'dark' ||
+    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
+  // Apply theme to document
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+};
+
+// Run initialization
+initializeDarkMode();
+
 // Get the root element
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error('Root element not found');

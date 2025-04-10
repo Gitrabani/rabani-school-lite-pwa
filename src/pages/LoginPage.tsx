@@ -14,8 +14,8 @@ const LoginPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500 dark:text-gray-300" />
       </div>
     );
   }
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 transition-colors duration-200">
       <div className="max-w-md w-full">
         <AuthHeader 
           title="Create an account" 
@@ -33,9 +33,9 @@ const LoginPage: React.FC = () => {
         />
 
         <Tabs defaultValue="email" onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 w-full mb-6 bg-gray-100 p-1 rounded-md">
-            <TabsTrigger value="email" className="rounded-md">Email</TabsTrigger>
-            <TabsTrigger value="social" className="rounded-md">Social</TabsTrigger>
+          <TabsList className="grid grid-cols-2 w-full mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-md">
+            <TabsTrigger value="email" className="rounded-md dark:text-white dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Email</TabsTrigger>
+            <TabsTrigger value="social" className="rounded-md dark:text-white dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white">Social</TabsTrigger>
           </TabsList>
           
           <TabsContent value="email">
