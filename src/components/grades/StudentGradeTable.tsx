@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -35,7 +34,8 @@ const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
   const [newTotalMarks, setNewTotalMarks] = useState<string>('100');
 
   const handleGradeInputChange = (studentId: string, value: string) => {
-    setNewGradeValues(prev => ({...prev, [studentId]: value}));
+    const updatedValues = { ...newGradeValues, [studentId]: value };
+    setNewGradeValues(updatedValues);
   };
 
   const handleSaveGrade = async (studentId: string) => {
