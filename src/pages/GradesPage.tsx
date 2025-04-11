@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mockClasses, mockSubjects, mockUsers } from '../data/mockData';
@@ -40,13 +39,11 @@ const GradesPage: React.FC = () => {
   const [newGradeValues, setNewGradeValues] = useState<Record<string, string>>({});
   const [newTotalMarks, setNewTotalMarks] = useState<string>('100');
 
-  // Fetch classes
   useEffect(() => {
     const fetchClasses = async () => {
       try {
         let query = supabase.from('classes').select('*');
         
-        // Filter classes based on user role
         if (user?.role === 'teacher') {
           query = query.eq('teacher_id', user.id);
         }
@@ -74,7 +71,6 @@ const GradesPage: React.FC = () => {
     }
   }, [user]);
 
-  // Different views based on user role
   const subjects = React.useMemo(() => {
     if (!selectedClass) return [];
     
@@ -88,14 +84,12 @@ const GradesPage: React.FC = () => {
     return mockSubjects.filter(s => classObj.subjects.includes(s.id));
   }, [selectedClass, user]);
 
-  // Fetch students with their grades
   useEffect(() => {
     const fetchStudentsWithGrades = async () => {
       if (!selectedClass || !selectedSubject) return;
       
       setLoading(true);
       try {
-        // For now, get students from mock data
         const classObj = mockClasses.find(c => c.id === selectedClass);
         if (!classObj) {
           setStudentGrades([]);
@@ -111,7 +105,6 @@ const GradesPage: React.FC = () => {
           return;
         }
 
-        // Fetch grades for these students
         const { data: grades, error } = await supabase
           .from('grades')
           .select('*')
@@ -130,11 +123,9 @@ const GradesPage: React.FC = () => {
           return;
         }
 
-        // Combine student data with grades
         const studentsWithGrades = studentList.map(student => {
           const grade = grades?.find(g => g.student_id === student.id);
           
-          // Initialize new grade value for this student
           if (grade?.marks) {
             setNewGradeValues(prev => ({...prev, [student.id]: grade.marks.toString()}));
           }
@@ -157,7 +148,6 @@ const GradesPage: React.FC = () => {
     fetchStudentsWithGrades();
   }, [selectedClass, selectedSubject, selectedExamType]);
 
-  // Fetch student's own grades if they are a student
   const [ownGrades, setOwnGrades] = useState<any[]>([]);
   
   useEffect(() => {
@@ -194,7 +184,6 @@ const GradesPage: React.FC = () => {
     }
   }, [user]);
 
-  // Group student grades by subject
   const gradesBySubject = React.useMemo(() => {
     if (user?.role !== 'student') return {};
     
@@ -210,7 +199,6 @@ const GradesPage: React.FC = () => {
     }, {});
   }, [ownGrades, user?.role]);
 
-  // Function to handle saving grades
   const handleSaveGrade = async (studentId: string) => {
     if (!user || !selectedClass || !selectedSubject) return;
     
@@ -248,7 +236,6 @@ const GradesPage: React.FC = () => {
     setSavingGrades(prev => ({ ...prev, [studentId]: true }));
     
     try {
-      // Check if grade already exists
       const { data: existingGrade } = await supabase
         .from('grades')
         .select('*')
@@ -259,13 +246,12 @@ const GradesPage: React.FC = () => {
         .maybeSingle();
       
       if (existingGrade) {
-        // Update existing grade
         const { error } = await supabase
           .from('grades')
           .update({
             marks,
             total_marks: totalMarks,
-            updated_at: new Date()
+            updated_at: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX")
           })
           .eq('id', existingGrade.id);
         
@@ -279,7 +265,6 @@ const GradesPage: React.FC = () => {
           return;
         }
       } else {
-        // Create new grade
         const { error } = await supabase
           .from('grades')
           .insert({
@@ -289,7 +274,7 @@ const GradesPage: React.FC = () => {
             exam_type: selectedExamType,
             marks,
             total_marks: totalMarks,
-            date: format(new Date(), 'yyyy-MM-dd'), // Fixed: Format Date as string
+            date: format(new Date(), 'yyyy-MM-dd'),
             created_by: user.id
           });
         
@@ -304,7 +289,6 @@ const GradesPage: React.FC = () => {
         }
       }
       
-      // Update local state
       setStudentGrades(prev => 
         prev.map(student => {
           if (student.id === studentId) {
@@ -350,7 +334,6 @@ const GradesPage: React.FC = () => {
       />
       
       {user?.role === 'student' ? (
-        // Student view - shows their own grades
         <div>
           <Tabs defaultValue="bySubject">
             <TabsList className="mb-4">
@@ -472,7 +455,6 @@ const GradesPage: React.FC = () => {
           </Tabs>
         </div>
       ) : (
-        // Teacher/Admin view - can manage grades
         <div>
           <Card className="mb-6">
             <CardHeader>
