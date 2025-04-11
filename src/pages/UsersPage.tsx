@@ -18,20 +18,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit, Trash, UserPlus } from 'lucide-react';
+import { Plus, Search, Edit, Trash, UserPlus, Eye } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import UserFormDialog from '@/components/users/UserFormDialog';
+import { Student, User, UserRole } from '@/types';
+import StudentDetailsDialog from '@/components/users/StudentDetailsDialog';
 
 // This page should only be accessible by admins
 const UsersPage: React.FC = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [userRole, setUserRole] = useState<'all' | 'admin' | 'teacher' | 'student' | 'parent'>('all');
+  const [userRole, setUserRole] = useState<'all' | UserRole>('all');
   const [users, setUsers] = useState(mockUsers);
   const [userFormOpen, setUserFormOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
   // Filter users based on search and role
   const filteredUsers = users.filter(user => {
@@ -46,8 +50,21 @@ const UsersPage: React.FC = () => {
       id: `user-${Date.now()}`,
       name: userData.name,
       email: userData.email,
-      role: userData.role as 'admin' | 'teacher' | 'student' | 'parent',
+      role: userData.role as UserRole,
       profileImage: '', // Default empty profile image
+      ...(userData.role === 'student' && {
+        admissionNumber: userData.admissionNumber,
+        class: userData.class,
+        section: userData.section,
+        rollNumber: userData.rollNumber,
+        dateOfBirth: userData.dateOfBirth,
+        gender: userData.gender,
+        address: userData.address,
+        phoneNumber: userData.phoneNumber,
+        parentName: userData.parentName,
+        parentEmail: userData.parentEmail,
+        parentPhone: userData.parentPhone,
+      })
     };
     
     setUsers([...users, newUser]);
@@ -74,6 +91,13 @@ const UsersPage: React.FC = () => {
       title: "User Deleted",
       description: `User has been removed from the system.`,
     });
+  };
+  
+  const handleViewStudentDetails = (user: User) => {
+    if (user.role === 'student') {
+      setSelectedStudent(user as Student);
+      setDetailsDialogOpen(true);
+    }
   };
 
   const roleColorMap: Record<string, string> = {
@@ -158,10 +182,22 @@ const UsersPage: React.FC = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
+                            {user.role === 'student' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleViewStudentDetails(user)}
+                                title="View student details"
+                              >
+                                <Eye className="h-4 w-4" />
+                                <span className="sr-only">View Details</span>
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleEditUser(user.id)}
+                              title="Edit user"
                             >
                               <Edit className="h-4 w-4" />
                               <span className="sr-only">Edit</span>
@@ -170,6 +206,7 @@ const UsersPage: React.FC = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteUser(user.id)}
+                              title="Delete user"
                             >
                               <Trash className="h-4 w-4" />
                               <span className="sr-only">Delete</span>
@@ -191,6 +228,14 @@ const UsersPage: React.FC = () => {
         onOpenChange={setUserFormOpen} 
         onSubmit={handleAddUser} 
       />
+      
+      {selectedStudent && (
+        <StudentDetailsDialog 
+          student={selectedStudent} 
+          open={detailsDialogOpen}
+          onOpenChange={setDetailsDialogOpen}
+        />
+      )}
     </div>
   );
 };

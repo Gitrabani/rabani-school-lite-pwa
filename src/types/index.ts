@@ -26,6 +26,14 @@ export interface Student extends User {
   section: string;
   rollNumber?: string;
   parent?: Parent;
+  // Additional student personal information
+  dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other' | string;
+  address?: string;
+  phoneNumber?: string;
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string;
 }
 
 export interface Parent extends User {
