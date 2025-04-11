@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/select";
 import { mockUsers } from "@/data/mockData";
 import { Class } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/auth/AuthProvider";
 
 // Define the form schema with Zod
 const classFormSchema = z.object({
@@ -52,6 +55,8 @@ interface ClassFormDialogProps {
 
 const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps) => {
   const teachers = mockUsers.filter((user) => user.role === "teacher");
+  const { toast } = useToast();
+  const { user } = useAuth();
   
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classFormSchema),
@@ -62,9 +67,47 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
     },
   });
 
-  const handleSubmit = (data: ClassFormValues) => {
-    onSubmit(data);
-    form.reset();
+  const handleSubmit = async (data: ClassFormValues) => {
+    try {
+      // Insert the new class into Supabase
+      const { data: newClass, error } = await supabase
+        .from('classes')
+        .insert({
+          name: data.name,
+          section: data.section,
+          teacher_id: data.teacherId || null
+        })
+        .select()
+        .single();
+        
+      if (error) {
+        console.error("Error creating class:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create class. Please try again.",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Success",
+        description: `Class ${data.name} ${data.section} has been created.`,
+      });
+      
+      // Pass the data back to the parent component
+      onSubmit(data);
+      
+      // Reset the form
+      form.reset();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+      });
+    }
   };
 
   return (

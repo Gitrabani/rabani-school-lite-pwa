@@ -1,13 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { mockClasses, mockGrades, mockSubjects, mockUsers } from '../data/mockData';
+import { mockClasses, mockSubjects, mockUsers } from '../data/mockData';
 import PageHeader from '../components/shared/PageHeader';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -21,26 +22,59 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const GradesPage: React.FC = () => {
   const { user } = useAuth();
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState<string>('midterm');
+  const [loading, setLoading] = useState(false);
+  const [savingGrades, setSavingGrades] = useState<Record<string, boolean>>({});
+  const [classes, setClasses] = useState<any[]>([]);
+  const [studentGrades, setStudentGrades] = useState<any[]>([]);
+  const [newGradeValues, setNewGradeValues] = useState<Record<string, string>>({});
+  const [newTotalMarks, setNewTotalMarks] = useState<string>('100');
 
-  // Different views based on user role
-  const userClasses = React.useMemo(() => {
-    if (user?.role === 'admin') {
-      return mockClasses;
-    } else if (user?.role === 'teacher') {
-      return mockClasses.filter(c => c.teacherId === user.id);
-    } else if (user?.role === 'student') {
-      return mockClasses.filter(c => c.students.includes(user.id));
+  // Fetch classes
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        let query = supabase.from('classes').select('*');
+        
+        // Filter classes based on user role
+        if (user?.role === 'teacher') {
+          query = query.eq('teacher_id', user.id);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Error fetching classes:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load classes",
+          });
+          return;
+        }
+        
+        setClasses(data || []);
+      } catch (error) {
+        console.error("Error:", error);
+      }
+    };
+    
+    if (user) {
+      fetchClasses();
     }
-    return [];
   }, [user]);
 
+  // Different views based on user role
   const subjects = React.useMemo(() => {
     if (!selectedClass) return [];
     
@@ -54,41 +88,118 @@ const GradesPage: React.FC = () => {
     return mockSubjects.filter(s => classObj.subjects.includes(s.id));
   }, [selectedClass, user]);
 
-  const students = React.useMemo(() => {
-    if (!selectedClass) return [];
-    
-    const classObj = mockClasses.find(c => c.id === selectedClass);
-    if (!classObj) return [];
-    
-    return mockUsers
-      .filter(u => u.role === 'student' && classObj.students.includes(u.id))
-      .map(student => {
-        const grade = selectedSubject ? 
-          mockGrades.find(g => 
-            g.studentId === student.id && 
-            g.subjectId === selectedSubject && 
-            g.examType === selectedExamType
-          ) : undefined;
+  // Fetch students with their grades
+  useEffect(() => {
+    const fetchStudentsWithGrades = async () => {
+      if (!selectedClass || !selectedSubject) return;
+      
+      setLoading(true);
+      try {
+        // For now, get students from mock data
+        const classObj = mockClasses.find(c => c.id === selectedClass);
+        if (!classObj) {
+          setStudentGrades([]);
+          return;
+        }
         
-        return {
-          ...student,
-          grade: grade || null
-        };
-      });
+        const studentList = mockUsers
+          .filter(u => u.role === 'student' && classObj.students.includes(u.id));
+        
+        if (!studentList.length) {
+          setStudentGrades([]);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch grades for these students
+        const { data: grades, error } = await supabase
+          .from('grades')
+          .select('*')
+          .eq('class_id', selectedClass)
+          .eq('subject_id', selectedSubject)
+          .eq('exam_type', selectedExamType);
+        
+        if (error) {
+          console.error("Error fetching grades:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load grades",
+          });
+          setStudentGrades([]);
+          return;
+        }
+
+        // Combine student data with grades
+        const studentsWithGrades = studentList.map(student => {
+          const grade = grades?.find(g => g.student_id === student.id);
+          
+          // Initialize new grade value for this student
+          if (grade?.marks) {
+            setNewGradeValues(prev => ({...prev, [student.id]: grade.marks.toString()}));
+          }
+          
+          return {
+            ...student,
+            grade: grade || null
+          };
+        });
+        
+        setStudentGrades(studentsWithGrades);
+      } catch (error) {
+        console.error("Error:", error);
+        setStudentGrades([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStudentsWithGrades();
   }, [selectedClass, selectedSubject, selectedExamType]);
 
-  const studentGrades = React.useMemo(() => {
-    if (user?.role !== 'student') return [];
+  // Fetch student's own grades if they are a student
+  const [ownGrades, setOwnGrades] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const fetchOwnGrades = async () => {
+      if (user?.role !== 'student') return;
+      
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('grades')
+          .select('*, classes(*)')
+          .eq('student_id', user.id);
+        
+        if (error) {
+          console.error("Error fetching grades:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load grades",
+          });
+          return;
+        }
+        
+        setOwnGrades(data || []);
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    return mockGrades.filter(g => g.studentId === user.id);
+    if (user?.role === 'student') {
+      fetchOwnGrades();
+    }
   }, [user]);
 
   // Group student grades by subject
   const gradesBySubject = React.useMemo(() => {
     if (user?.role !== 'student') return {};
     
-    return studentGrades.reduce<Record<string, any[]>>((acc, grade) => {
-      const subject = mockSubjects.find(s => s.id === grade.subjectId);
+    return ownGrades.reduce<Record<string, any[]>>((acc, grade) => {
+      const subject = mockSubjects.find(s => s.id === grade.subject_id);
       if (subject) {
         if (!acc[subject.name]) {
           acc[subject.name] = [];
@@ -97,11 +208,138 @@ const GradesPage: React.FC = () => {
       }
       return acc;
     }, {});
-  }, [studentGrades, user?.role]);
+  }, [ownGrades, user?.role]);
 
-  // Mock function for saving grades
-  const handleSaveGrade = (studentId: string, marks: number) => {
-    console.log(`Saving grade for student ${studentId}: ${marks}`);
+  // Function to handle saving grades
+  const handleSaveGrade = async (studentId: string) => {
+    if (!user || !selectedClass || !selectedSubject) return;
+    
+    const marksValue = newGradeValues[studentId];
+    if (!marksValue) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter a valid mark",
+      });
+      return;
+    }
+    
+    const marks = parseFloat(marksValue);
+    const totalMarks = parseFloat(newTotalMarks);
+    
+    if (isNaN(marks) || marks < 0) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter a valid mark",
+      });
+      return;
+    }
+    
+    if (isNaN(totalMarks) || totalMarks <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter valid total marks",
+      });
+      return;
+    }
+    
+    setSavingGrades(prev => ({ ...prev, [studentId]: true }));
+    
+    try {
+      // Check if grade already exists
+      const { data: existingGrade } = await supabase
+        .from('grades')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('subject_id', selectedSubject)
+        .eq('class_id', selectedClass)
+        .eq('exam_type', selectedExamType)
+        .maybeSingle();
+      
+      if (existingGrade) {
+        // Update existing grade
+        const { error } = await supabase
+          .from('grades')
+          .update({
+            marks,
+            total_marks: totalMarks,
+            updated_at: new Date()
+          })
+          .eq('id', existingGrade.id);
+        
+        if (error) {
+          console.error("Error updating grade:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to update grade",
+          });
+          return;
+        }
+      } else {
+        // Create new grade
+        const { error } = await supabase
+          .from('grades')
+          .insert({
+            student_id: studentId,
+            subject_id: selectedSubject,
+            class_id: selectedClass,
+            exam_type: selectedExamType,
+            marks,
+            total_marks: totalMarks,
+            date: format(new Date(), 'yyyy-MM-dd'),
+            created_by: user.id
+          });
+        
+        if (error) {
+          console.error("Error creating grade:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to save grade",
+          });
+          return;
+        }
+      }
+      
+      // Update local state
+      setStudentGrades(prev => 
+        prev.map(student => {
+          if (student.id === studentId) {
+            return {
+              ...student,
+              grade: {
+                ...student.grade,
+                marks,
+                total_marks: totalMarks,
+                exam_type: selectedExamType
+              }
+            };
+          }
+          return student;
+        })
+      );
+      
+      toast({
+        title: "Success",
+        description: "Grade has been saved",
+      });
+    } catch (error) {
+      console.error("Error saving grade:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred",
+      });
+    } finally {
+      setSavingGrades(prev => ({ ...prev, [studentId]: false }));
+    }
+  };
+
+  const handleGradeInputChange = (studentId: string, value: string) => {
+    setNewGradeValues(prev => ({...prev, [studentId]: value}));
   };
 
   return (
@@ -121,7 +359,12 @@ const GradesPage: React.FC = () => {
             </TabsList>
             
             <TabsContent value="bySubject">
-              {Object.entries(gradesBySubject).length === 0 ? (
+              {loading ? (
+                <div className="space-y-6">
+                  <Skeleton className="h-[200px] w-full" />
+                  <Skeleton className="h-[200px] w-full" />
+                </div>
+              ) : Object.entries(gradesBySubject).length === 0 ? (
                 <Card>
                   <CardContent className="py-10 text-center">
                     <p className="text-muted-foreground">No grades available</p>
@@ -149,12 +392,12 @@ const GradesPage: React.FC = () => {
                             {grades.map(grade => (
                               <TableRow key={grade.id}>
                                 <TableCell className="font-medium">
-                                  {grade.examType.charAt(0).toUpperCase() + grade.examType.slice(1)}
+                                  {grade.exam_type.charAt(0).toUpperCase() + grade.exam_type.slice(1)}
                                 </TableCell>
                                 <TableCell>{grade.marks}</TableCell>
-                                <TableCell>{grade.totalMarks}</TableCell>
+                                <TableCell>{grade.total_marks}</TableCell>
                                 <TableCell>
-                                  {Math.round((grade.marks / grade.totalMarks) * 100)}%
+                                  {Math.round((grade.marks / grade.total_marks) * 100)}%
                                 </TableCell>
                                 <TableCell>{grade.date}</TableCell>
                               </TableRow>
@@ -174,47 +417,55 @@ const GradesPage: React.FC = () => {
                   <CardTitle>All Exam Results</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Subject</TableHead>
-                        <TableHead>Exam Type</TableHead>
-                        <TableHead>Marks</TableHead>
-                        <TableHead>Percentage</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {studentGrades.length === 0 ? (
+                  {loading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">
-                            No grades available
-                          </TableCell>
+                          <TableHead>Subject</TableHead>
+                          <TableHead>Exam Type</TableHead>
+                          <TableHead>Marks</TableHead>
+                          <TableHead>Percentage</TableHead>
+                          <TableHead>Date</TableHead>
                         </TableRow>
-                      ) : (
-                        studentGrades.map(grade => {
-                          const subject = mockSubjects.find(s => s.id === grade.subjectId);
-                          return (
-                            <TableRow key={grade.id}>
-                              <TableCell className="font-medium">
-                                {subject?.name || 'Unknown Subject'}
-                              </TableCell>
-                              <TableCell>
-                                {grade.examType.charAt(0).toUpperCase() + grade.examType.slice(1)}
-                              </TableCell>
-                              <TableCell>
-                                {grade.marks} / {grade.totalMarks}
-                              </TableCell>
-                              <TableCell>
-                                {Math.round((grade.marks / grade.totalMarks) * 100)}%
-                              </TableCell>
-                              <TableCell>{grade.date}</TableCell>
-                            </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {ownGrades.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center">
+                              No grades available
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          ownGrades.map(grade => {
+                            const subject = mockSubjects.find(s => s.id === grade.subject_id);
+                            return (
+                              <TableRow key={grade.id}>
+                                <TableCell className="font-medium">
+                                  {subject?.name || 'Unknown Subject'}
+                                </TableCell>
+                                <TableCell>
+                                  {grade.exam_type.charAt(0).toUpperCase() + grade.exam_type.slice(1)}
+                                </TableCell>
+                                <TableCell>
+                                  {grade.marks} / {grade.total_marks}
+                                </TableCell>
+                                <TableCell>
+                                  {Math.round((grade.marks / grade.total_marks) * 100)}%
+                                </TableCell>
+                                <TableCell>{grade.date}</TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -226,6 +477,9 @@ const GradesPage: React.FC = () => {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Grade Entry</CardTitle>
+              <CardDescription>
+                Select class, subject, and exam type to manage grades
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -236,11 +490,15 @@ const GradesPage: React.FC = () => {
                       <SelectValue placeholder="Select a class" />
                     </SelectTrigger>
                     <SelectContent>
-                      {userClasses.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name} {c.section}
-                        </SelectItem>
-                      ))}
+                      {classes.length === 0 ? (
+                        <SelectItem value="loading" disabled>Loading classes...</SelectItem>
+                      ) : (
+                        classes.map(c => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name} {c.section}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -289,10 +547,30 @@ const GradesPage: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Student Grades</CardTitle>
+                {user?.role === 'teacher' && (
+                  <div className="flex items-center mt-2">
+                    <label className="text-sm font-medium mr-3">Total Marks:</label>
+                    <Input 
+                      type="number" 
+                      className="w-24" 
+                      value={newTotalMarks} 
+                      onChange={(e) => setNewTotalMarks(e.target.value)}
+                    />
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
-                {students.length === 0 ? (
-                  <p className="text-center py-4">No students found in this class</p>
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : studentGrades.length === 0 ? (
+                  <div className="text-center py-8 flex flex-col items-center">
+                    <AlertCircle className="h-12 w-12 text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground">No students found in this class</p>
+                  </div>
                 ) : (
                   <div className="rounded-md border">
                     <Table>
@@ -304,14 +582,14 @@ const GradesPage: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {students.map(student => (
+                        {studentGrades.map(student => (
                           <TableRow key={student.id}>
                             <TableCell className="font-medium">{student.name}</TableCell>
                             <TableCell>
                               {student.grade ? (
                                 <>
-                                  {student.grade.marks} / {student.grade.totalMarks} 
-                                  ({Math.round((student.grade.marks / student.grade.totalMarks) * 100)}%)
+                                  {student.grade.marks} / {student.grade.total_marks} 
+                                  ({Math.round((student.grade.marks / student.grade.total_marks) * 100)}%)
                                 </>
                               ) : (
                                 'Not graded'
@@ -324,14 +602,16 @@ const GradesPage: React.FC = () => {
                                     type="number" 
                                     className="w-20 mr-2" 
                                     placeholder="Marks"
-                                    defaultValue={student.grade?.marks}
+                                    value={newGradeValues[student.id] || ''}
+                                    onChange={(e) => handleGradeInputChange(student.id, e.target.value)}
                                   />
-                                  <span className="mr-2">/ 100</span>
+                                  <span className="mr-2">/ {newTotalMarks}</span>
                                   <Button 
                                     size="sm" 
-                                    onClick={() => handleSaveGrade(student.id, 85)}
+                                    onClick={() => handleSaveGrade(student.id)}
+                                    disabled={savingGrades[student.id]}
                                   >
-                                    Save
+                                    {savingGrades[student.id] ? 'Saving...' : 'Save'}
                                   </Button>
                                 </div>
                               </TableCell>
