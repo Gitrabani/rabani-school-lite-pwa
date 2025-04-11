@@ -289,7 +289,7 @@ const GradesPage: React.FC = () => {
             exam_type: selectedExamType,
             marks,
             total_marks: totalMarks,
-            date: format(new Date(), 'yyyy-MM-dd'),
+            date: format(new Date(), 'yyyy-MM-dd'), // Fixed: Format Date as string
             created_by: user.id
           });
         
