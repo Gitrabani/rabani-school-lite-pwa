@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockClasses, mockSubjects } from '@/data/mockData';
 
-interface GradeEntryFormProps {
+interface GradeSelectionFormProps {
   selectedClass: string;
   setSelectedClass: (value: string) => void;
   selectedSubject: string;
@@ -12,10 +11,10 @@ interface GradeEntryFormProps {
   selectedExamType: string;
   setSelectedExamType: (value: string) => void;
   classes: any[];
-  user: any;
+  subjects: any[];
 }
 
-const GradeEntryForm: React.FC<GradeEntryFormProps> = ({
+const GradeSelectionForm: React.FC<GradeSelectionFormProps> = ({
   selectedClass,
   setSelectedClass,
   selectedSubject,
@@ -23,28 +22,13 @@ const GradeEntryForm: React.FC<GradeEntryFormProps> = ({
   selectedExamType,
   setSelectedExamType,
   classes,
-  user
+  subjects
 }) => {
-  const subjects = React.useMemo(() => {
-    if (!selectedClass) return [];
-    
-    const classObj = mockClasses.find(c => c.id === selectedClass);
-    if (!classObj) return [];
-    
-    if (user?.role === 'teacher') {
-      return mockSubjects.filter(s => s.teacherId === user.id && classObj.subjects.includes(s.id));
-    }
-    
-    return mockSubjects.filter(s => classObj.subjects.includes(s.id));
-  }, [selectedClass, user]);
-
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Grade Entry</CardTitle>
-        <CardDescription>
-          Select class, subject, and exam type to manage grades
-        </CardDescription>
+        <CardTitle>Class and Subject Selection</CardTitle>
+        <CardDescription>Select class, subject, and exam type to view and manage grades</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -67,6 +51,7 @@ const GradeEntryForm: React.FC<GradeEntryFormProps> = ({
               </SelectContent>
             </Select>
           </div>
+          
           <div>
             <label className="block text-sm font-medium mb-1">Subject</label>
             <Select 
@@ -86,6 +71,7 @@ const GradeEntryForm: React.FC<GradeEntryFormProps> = ({
               </SelectContent>
             </Select>
           </div>
+          
           <div>
             <label className="block text-sm font-medium mb-1">Exam Type</label>
             <Select 
@@ -110,4 +96,4 @@ const GradeEntryForm: React.FC<GradeEntryFormProps> = ({
   );
 };
 
-export default GradeEntryForm;
+export default GradeSelectionForm;

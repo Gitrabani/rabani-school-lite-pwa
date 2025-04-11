@@ -1,27 +1,30 @@
 
-import React, { useState } from 'react';
-import GradeEntryForm from './GradeEntryForm';
-import StudentGradeTable from './StudentGradeTable';
-import { useClassData } from '@/hooks/useClassData';
-import { useStudentGrades } from '@/hooks/useStudentGrades';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
+import StudentGradeTable from './StudentGradeTable';
+import GradeSelectionForm from './GradeSelectionForm';
+import { useTeacherGradeData } from '@/hooks/useTeacherGradeData';
 
 const TeacherGradeView: React.FC = () => {
   const { user } = useAuth();
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedExamType, setSelectedExamType] = useState<string>('midterm');
-  
-  const { classes } = useClassData();
-  const { studentGrades, loading, newGradeValues, setNewGradeValues } = useStudentGrades(
-    selectedClass, 
-    selectedSubject, 
-    selectedExamType
-  );
+  const {
+    selectedClass,
+    setSelectedClass,
+    selectedSubject,
+    setSelectedSubject,
+    selectedExamType,
+    setSelectedExamType,
+    classes,
+    subjects,
+    studentGrades,
+    loading,
+    newGradeValues,
+    setNewGradeValues
+  } = useTeacherGradeData(user);
 
   return (
     <div>
-      <GradeEntryForm
+      <GradeSelectionForm
         selectedClass={selectedClass}
         setSelectedClass={setSelectedClass}
         selectedSubject={selectedSubject}
@@ -29,7 +32,7 @@ const TeacherGradeView: React.FC = () => {
         selectedExamType={selectedExamType}
         setSelectedExamType={setSelectedExamType}
         classes={classes}
-        user={user}
+        subjects={subjects}
       />
       
       {selectedClass && selectedSubject && (
