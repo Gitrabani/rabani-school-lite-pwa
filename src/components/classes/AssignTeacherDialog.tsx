@@ -37,7 +37,7 @@ const assignTeacherSchema = z.object({
 });
 
 type AssignTeacherFormValues = z.infer<typeof assignTeacherSchema>;
-type Teacher = { id: string; name: string; email: string };
+type Teacher = { id: string; name: string };
 
 interface AssignTeacherDialogProps {
   open: boolean;
@@ -82,7 +82,7 @@ const AssignTeacherDialog = ({
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name')
           .eq('role', 'teacher');
         
         if (error) {
@@ -97,8 +97,7 @@ const AssignTeacherDialog = ({
         
         const teachersList = (data || []).map(teacher => ({
           id: teacher.id,
-          name: teacher.full_name || 'Unknown',
-          email: teacher.email || ''
+          name: teacher.full_name || 'Unknown'
         }));
         
         console.log(`Fetched ${teachersList.length} teachers`);

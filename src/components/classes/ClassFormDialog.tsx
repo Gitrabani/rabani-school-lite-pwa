@@ -44,7 +44,7 @@ const classFormSchema = z.object({
 });
 
 type ClassFormValues = z.infer<typeof classFormSchema>;
-type Teacher = { id: string; name: string; email: string };
+type Teacher = { id: string; name: string };
 
 interface ClassFormDialogProps {
   open: boolean;
@@ -68,7 +68,7 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
         console.log("Fetching teachers from database");
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name')
           .eq('role', 'teacher');
         
         if (error) {
@@ -83,8 +83,7 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
         
         const teachersList = (data || []).map(teacher => ({
           id: teacher.id,
-          name: teacher.full_name || 'Unknown',
-          email: teacher.email || ''
+          name: teacher.full_name || 'Unknown'
         }));
         
         console.log(`Fetched ${teachersList.length} teachers:`, teachersList);

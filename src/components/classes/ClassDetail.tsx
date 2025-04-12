@@ -84,11 +84,11 @@ const ClassDetail: React.FC<ClassDetailProps> = ({
           </TabsList>
 
           <TabsContent value="students" className="space-y-4">
-            <ClassStudentsSection classId={classData.id} />
+            <ClassStudentsSection classData={classData} />
           </TabsContent>
 
           <TabsContent value="subjects" className="space-y-4">
-            <ClassSubjectsSection classId={classData.id} />
+            <ClassSubjectsSection classData={classData} />
           </TabsContent>
         </Tabs>
 
