@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,8 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Define the form schema with Zod
 const userFormSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
@@ -44,7 +43,6 @@ const userFormSchema = z.object({
   password: z.string().min(6, {
     message: "Password must be at least 6 characters.",
   }),
-  // Student-specific fields
   admissionNumber: z.string().optional(),
   class: z.string().optional(),
   section: z.string().optional(),
@@ -69,6 +67,7 @@ interface UserFormDialogProps {
 const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) => {
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<string>("student");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -91,9 +90,52 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
     },
   });
 
-  const handleSubmit = (data: UserFormValues) => {
-    onSubmit(data);
-    form.reset();
+  const handleSubmit = async (data: UserFormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      console.log("Creating new user with role:", data.role);
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.name,
+            role: data.role
+          }
+        }
+      });
+      
+      if (authError) {
+        console.error("Error creating user:", authError);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Failed to create user: ${authError.message}`,
+        });
+        return;
+      }
+      
+      console.log("User created successfully:", authData);
+      
+      toast({
+        title: "Success",
+        description: `User ${data.name} has been created successfully.`,
+      });
+      
+      onSubmit(data);
+      form.reset();
+    } catch (error: any) {
+      console.error("Error in user creation:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `An error occurred: ${error.message}`,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const watchRole = form.watch("role");
@@ -362,7 +404,9 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
             )}
 
             <DialogFooter>
-              <Button type="submit">Create User</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create User"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

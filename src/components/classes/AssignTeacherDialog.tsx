@@ -20,7 +20,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -30,42 +29,57 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
+import { Class } from "@/types";
 
 // Define the form schema with Zod
-const classFormSchema = z.object({
-  name: z.string().min(2, {
-    message: "Class name must be at least 2 characters.",
-  }),
-  section: z.string().min(1, {
-    message: "Section is required.",
-  }),
-  teacherId: z.string().optional(),
+const assignTeacherSchema = z.object({
+  teacherId: z.string().uuid().optional(),
 });
 
-type ClassFormValues = z.infer<typeof classFormSchema>;
+type AssignTeacherFormValues = z.infer<typeof assignTeacherSchema>;
 type Teacher = { id: string; name: string; email: string };
 
-interface ClassFormDialogProps {
+interface AssignTeacherDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ClassFormValues) => void;
+  classData: Class;
+  onUpdate: () => void;
 }
 
-const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps) => {
+const AssignTeacherDialog = ({ 
+  open, 
+  onOpenChange, 
+  classData,
+  onUpdate
+}: AssignTeacherDialogProps) => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
   
-  // Fetch teachers from Supabase
+  const form = useForm<AssignTeacherFormValues>({
+    resolver: zodResolver(assignTeacherSchema),
+    defaultValues: {
+      teacherId: classData.teacherId || undefined,
+    },
+  });
+
+  // Reset form when the dialog opens with current teacher
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        teacherId: classData.teacherId || undefined,
+      });
+    }
+  }, [open, classData, form]);
+  
+  // Fetch teachers from database
   useEffect(() => {
     const fetchTeachers = async () => {
       if (!open) return;
       
       setIsLoading(true);
       try {
-        console.log("Fetching teachers from database");
         const { data, error } = await supabase
           .from('profiles')
           .select('id, full_name, email')
@@ -87,7 +101,7 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
           email: teacher.email || ''
         }));
         
-        console.log(`Fetched ${teachersList.length} teachers:`, teachersList);
+        console.log(`Fetched ${teachersList.length} teachers`);
         setTeachers(teachersList);
       } catch (error: any) {
         console.error("Error:", error);
@@ -103,55 +117,36 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
     
     fetchTeachers();
   }, [open, toast]);
-  
-  const form = useForm<ClassFormValues>({
-    resolver: zodResolver(classFormSchema),
-    defaultValues: {
-      name: "",
-      section: "",
-      teacherId: undefined,
-    },
-  });
 
-  const handleSubmit = async (data: ClassFormValues) => {
+  const handleSubmit = async (data: AssignTeacherFormValues) => {
+    setIsSubmitting(true);
     try {
-      console.log("Form data for class creation:", data);
+      console.log("Updating class with teacher:", data.teacherId);
       
-      // Create the payload with null for teacherId if not provided
-      const payload = {
-        name: data.name,
-        section: data.section,
-        teacher_id: data.teacherId || null
-      };
-      
-      console.log("Payload for Supabase insert:", payload);
-      
-      // Insert the new class into Supabase
-      const { data: newClass, error } = await supabase
+      // Update the class in Supabase
+      const { error } = await supabase
         .from('classes')
-        .insert(payload)
-        .select();
+        .update({ teacher_id: data.teacherId || null })
+        .eq('id', classData.id);
         
       if (error) {
-        console.error("Error creating class:", error);
+        console.error("Error updating class:", error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: `Failed to create class: ${error.message}`,
+          description: `Failed to update class: ${error.message}`,
         });
         return;
       }
       
       toast({
         title: "Success",
-        description: `Class ${data.name} ${data.section} has been created.`,
+        description: `Teacher has been ${data.teacherId ? 'assigned to' : 'removed from'} the class.`,
       });
       
-      // Pass the data back to the parent component
-      onSubmit(data);
-      
-      // Reset the form
-      form.reset();
+      // Notify parent component about the update
+      onUpdate();
+      onOpenChange(false);
     } catch (error: any) {
       console.error("Error:", error);
       toast({
@@ -159,6 +154,8 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
         title: "Error",
         description: `An unexpected error occurred: ${error.message || "Unknown error"}`,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -166,45 +163,19 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Class</DialogTitle>
+          <DialogTitle>Assign Teacher</DialogTitle>
           <DialogDescription>
-            Create a new class for the school management system.
+            Assign a teacher to {classData.name} {classData.section}.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Class Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Grade 10" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="section"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Section</FormLabel>
-                  <FormControl>
-                    <Input placeholder="A" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="teacherId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Class Teacher</FormLabel>
+                  <FormLabel>Teacher</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
@@ -229,7 +200,9 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
             />
 
             <DialogFooter>
-              <Button type="submit">Create Class</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
@@ -238,4 +211,4 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
   );
 };
 
-export default ClassFormDialog;
+export default AssignTeacherDialog;

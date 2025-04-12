@@ -1,19 +1,20 @@
 
-import React from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
-  DialogFooter
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { mockUsers, mockSubjects } from "@/data/mockData";
-import { Class } from "@/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { X, UserPlus } from 'lucide-react';
+import { Class } from '@/types';
 import ClassStudentsSection from './ClassStudentsSection';
 import ClassSubjectsSection from './ClassSubjectsSection';
+import { useAuth } from '@/context/AuthContext';
+import AssignTeacherDialog from './AssignTeacherDialog';
 
 interface ClassDetailProps {
   classData: Class;
@@ -22,110 +23,82 @@ interface ClassDetailProps {
   open: boolean;
 }
 
-const ClassDetail: React.FC<ClassDetailProps> = ({
-  classData,
-  onUpdate,
+const ClassDetail: React.FC<ClassDetailProps> = ({ 
+  classData, 
+  onUpdate, 
   onClose,
-  open,
+  open
 }) => {
-  const { toast } = useToast();
-  
-  const teacherName = mockUsers.find(u => u.id === classData.teacherId)?.name || 'Unassigned';
-  const students = mockUsers.filter(u => u.role === 'student' && classData.students.includes(u.id));
-  const subjects = mockSubjects.filter(s => classData.subjects.includes(s.id));
-  
-  // Available students/subjects (not yet in the class)
-  const availableStudents = mockUsers.filter(
-    u => u.role === 'student' && !classData.students.includes(u.id)
-  );
-  
-  const availableSubjects = mockSubjects.filter(
-    s => !classData.subjects.includes(s.id)
-  );
+  const [activeTab, setActiveTab] = useState('students');
+  const [assignTeacherOpen, setAssignTeacherOpen] = useState(false);
+  const { user } = useAuth();
 
-  const handleAddStudent = (studentId: string) => {
-    if (!classData.students.includes(studentId)) {
-      const updatedClass = {
-        ...classData,
-        students: [...classData.students, studentId]
-      };
-      onUpdate(updatedClass);
-      toast({
-        title: "Student Added",
-        description: "The student has been added to the class."
-      });
-    }
-  };
-  
-  const handleRemoveStudent = (studentId: string) => {
-    const updatedClass = {
-      ...classData,
-      students: classData.students.filter(id => id !== studentId)
-    };
-    onUpdate(updatedClass);
-    toast({
-      title: "Student Removed",
-      description: "The student has been removed from the class."
-    });
-  };
-  
-  const handleAddSubject = (subjectId: string) => {
-    if (!classData.subjects.includes(subjectId)) {
-      const updatedClass = {
-        ...classData,
-        subjects: [...classData.subjects, subjectId]
-      };
-      onUpdate(updatedClass);
-      toast({
-        title: "Subject Added",
-        description: "The subject has been added to the class."
-      });
-    }
-  };
-  
-  const handleRemoveSubject = (subjectId: string) => {
-    const updatedClass = {
-      ...classData,
-      subjects: classData.subjects.filter(id => id !== subjectId)
-    };
-    onUpdate(updatedClass);
-    toast({
-      title: "Subject Removed",
-      description: "The subject has been removed from the class."
-    });
+  const isAdmin = user?.role === 'admin';
+
+  const handleAssignTeacherComplete = () => {
+    // We'll refetch the data when this is called
+    onUpdate(classData);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{classData.name} {classData.section}</DialogTitle>
-          <DialogDescription>
-            Class Teacher: {teacherName}
-          </DialogDescription>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) onClose();
+    }}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <DialogTitle className="text-xl mb-1">
+              {classData.name} {classData.section}
+            </DialogTitle>
+            <DialogDescription>
+              Manage class details, students and subjects
+            </DialogDescription>
+          </div>
+          <div className="flex items-center space-x-2">
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setAssignTeacherOpen(true)}
+                className="flex items-center"
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                {classData.teacherId ? "Change Teacher" : "Assign Teacher"}
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose}
+              className="text-muted-foreground"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="py-4">
+          <TabsList className="mb-4">
+            <TabsTrigger value="students">Students</TabsTrigger>
+            <TabsTrigger value="subjects">Subjects</TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-4 my-4">
-          {/* Students Section */}
-          <ClassStudentsSection
-            students={students}
-            availableStudents={availableStudents}
-            onAddStudent={handleAddStudent}
-            onRemoveStudent={handleRemoveStudent}
-          />
-          
-          {/* Subjects Section */}
-          <ClassSubjectsSection
-            subjects={subjects}
-            availableSubjects={availableSubjects}
-            onAddSubject={handleAddSubject}
-            onRemoveSubject={handleRemoveSubject}
-          />
-        </div>
+          <TabsContent value="students" className="space-y-4">
+            <ClassStudentsSection classId={classData.id} />
+          </TabsContent>
 
-        <DialogFooter>
-          <Button onClick={onClose}>Close</Button>
-        </DialogFooter>
+          <TabsContent value="subjects" className="space-y-4">
+            <ClassSubjectsSection classId={classData.id} />
+          </TabsContent>
+        </Tabs>
+
+        {/* Assign Teacher Dialog */}
+        <AssignTeacherDialog
+          open={assignTeacherOpen}
+          onOpenChange={setAssignTeacherOpen}
+          classData={classData}
+          onUpdate={handleAssignTeacherComplete}
+        />
       </DialogContent>
     </Dialog>
   );

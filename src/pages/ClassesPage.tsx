@@ -21,7 +21,6 @@ const ClassesPage: React.FC = () => {
   const { classes, loading, refetch } = useClassData();
 
   const handleAddClass = () => {
-    // This will be triggered when the form is submitted - we'll refetch classes
     refetch();
     setClassFormOpen(false);
   };
@@ -34,7 +33,7 @@ const ClassesPage: React.FC = () => {
   };
 
   const handleUpdateClass = (updatedClass: Class) => {
-    // This will be handled by Supabase and the useClassData hook
+    refetch();
   };
 
   const handleCloseClassDetail = () => {
