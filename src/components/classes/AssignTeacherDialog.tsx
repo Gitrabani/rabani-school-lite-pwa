@@ -12,24 +12,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Class } from "@/types";
+import TeacherSelect from "./TeacherSelect";
 
 // Define the form schema with Zod
 const assignTeacherSchema = z.object({
@@ -37,7 +24,6 @@ const assignTeacherSchema = z.object({
 });
 
 type AssignTeacherFormValues = z.infer<typeof assignTeacherSchema>;
-type Teacher = { id: string; name: string };
 
 interface AssignTeacherDialogProps {
   open: boolean;
@@ -52,8 +38,6 @@ const AssignTeacherDialog = ({
   classData,
   onUpdate
 }: AssignTeacherDialogProps) => {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
@@ -72,50 +56,6 @@ const AssignTeacherDialog = ({
       });
     }
   }, [open, classData, form]);
-  
-  // Fetch teachers from database
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      if (!open) return;
-      
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('role', 'teacher');
-        
-        if (error) {
-          console.error("Error fetching teachers:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: `Failed to load teachers: ${error.message}`,
-          });
-          return;
-        }
-        
-        const teachersList = (data || []).map(teacher => ({
-          id: teacher.id,
-          name: teacher.full_name || 'Unknown'
-        }));
-        
-        console.log(`Fetched ${teachersList.length} teachers`);
-        setTeachers(teachersList);
-      } catch (error: any) {
-        console.error("Error:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `An unexpected error occurred: ${error.message}`,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchTeachers();
-  }, [open, toast]);
 
   const handleSubmit = async (data: AssignTeacherFormValues) => {
     setIsSubmitting(true);
@@ -169,33 +109,9 @@ const AssignTeacherDialog = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="teacherId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Teacher</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={isLoading ? "Loading teachers..." : "Select a teacher"} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {teachers.map((teacher) => (
-                        <SelectItem key={teacher.id} value={teacher.id}>
-                          {teacher.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <TeacherSelect 
+              form={form} 
+              name="teacherId" 
             />
 
             <DialogFooter>

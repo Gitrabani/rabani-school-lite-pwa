@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,16 +21,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import TeacherSelect from "./TeacherSelect";
 
 // Define the form schema with Zod
 const classFormSchema = z.object({
@@ -44,7 +38,6 @@ const classFormSchema = z.object({
 });
 
 type ClassFormValues = z.infer<typeof classFormSchema>;
-type Teacher = { id: string; name: string };
 
 interface ClassFormDialogProps {
   open: boolean;
@@ -53,55 +46,9 @@ interface ClassFormDialogProps {
 }
 
 const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps) => {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  
-  // Fetch teachers from Supabase
-  useEffect(() => {
-    const fetchTeachers = async () => {
-      if (!open) return;
-      
-      setIsLoading(true);
-      try {
-        console.log("Fetching teachers from database");
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('role', 'teacher');
-        
-        if (error) {
-          console.error("Error fetching teachers:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: `Failed to load teachers: ${error.message}`,
-          });
-          return;
-        }
-        
-        const teachersList = (data || []).map(teacher => ({
-          id: teacher.id,
-          name: teacher.full_name || 'Unknown'
-        }));
-        
-        console.log(`Fetched ${teachersList.length} teachers:`, teachersList);
-        setTeachers(teachersList);
-      } catch (error: any) {
-        console.error("Error:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `An unexpected error occurred: ${error.message}`,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchTeachers();
-  }, [open, toast]);
   
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classFormSchema),
@@ -198,33 +145,12 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="teacherId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Class Teacher</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={isLoading ? "Loading teachers..." : "Select a teacher"} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="">None</SelectItem>
-                      {teachers.map((teacher) => (
-                        <SelectItem key={teacher.id} value={teacher.id}>
-                          {teacher.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+            
+            <TeacherSelect 
+              form={form} 
+              name="teacherId" 
+              label="Class Teacher"
+              placeholder="Select a teacher"
             />
 
             <DialogFooter>
