@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardHeader, 
@@ -18,22 +18,202 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { BookPlus, X, Plus } from "lucide-react";
-import { Subject } from "@/types";
+import { Class, Subject } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ClassSubjectsSectionProps {
-  subjects: Subject[];
-  availableSubjects: Subject[];
-  onAddSubject: (subjectId: string) => void;
-  onRemoveSubject: (subjectId: string) => void;
+  classData: Class;
 }
 
 const ClassSubjectsSection: React.FC<ClassSubjectsSectionProps> = ({
-  subjects,
-  availableSubjects,
-  onAddSubject,
-  onRemoveSubject
+  classData
 }) => {
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
   const [showAddSubject, setShowAddSubject] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Fetch subjects for this class
+  useEffect(() => {
+    const fetchClassSubjects = async () => {
+      setIsLoading(true);
+      try {
+        // Get all subjects from this class
+        const { data: classSubjectsData, error: classSubjectsError } = await supabase
+          .from('class_subjects')
+          .select('subject_id')
+          .eq('class_id', classData.id);
+
+        if (classSubjectsError) {
+          console.error("Error fetching class subjects:", classSubjectsError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load subjects for this class.",
+          });
+          return;
+        }
+
+        // If there are subjects, get their details
+        if (classSubjectsData.length > 0) {
+          const subjectIds = classSubjectsData.map(cs => cs.subject_id);
+          
+          const formattedSubjects = subjectIds.map(id => ({
+            id,
+            name: id, // Using the ID as the name since we don't have a subjects table
+            teacherId: classData.teacherId || '',
+            classes: [classData.id]
+          }));
+          
+          setSubjects(formattedSubjects);
+        } else {
+          setSubjects([]);
+        }
+      } catch (error: any) {
+        console.error("Error:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `An unexpected error occurred: ${error.message}`,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClassSubjects();
+  }, [classData.id, classData.teacherId, toast]);
+
+  // Fetch available subjects (not in this class)
+  const fetchAvailableSubjects = async () => {
+    try {
+      // Get all subjects from this class
+      const { data: classSubjectsData, error: classSubjectsError } = await supabase
+        .from('class_subjects')
+        .select('subject_id')
+        .eq('class_id', classData.id);
+
+      if (classSubjectsError) {
+        console.error("Error fetching class subjects:", classSubjectsError);
+        return;
+      }
+
+      const existingSubjectIds = classSubjectsData.map(cs => cs.subject_id);
+      
+      // For now, we'll use a predefined list of subjects
+      const allSubjects = [
+        "Mathematics", "English", "Science", "History", "Geography", 
+        "Physics", "Chemistry", "Biology", "Computer Science", "Art", "Music"
+      ];
+      
+      // Filter out subjects already in this class
+      const availableSubjectsList = allSubjects
+        .filter(subject => !existingSubjectIds.includes(subject))
+        .map(subject => ({
+          id: subject,
+          name: subject,
+          teacherId: classData.teacherId || '',
+          classes: []
+        }));
+
+      setAvailableSubjects(availableSubjectsList);
+    } catch (error: any) {
+      console.error("Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `An unexpected error occurred: ${error.message}`,
+      });
+    }
+  };
+
+  // Open add subject dialog and fetch available subjects
+  const handleOpenAddSubject = () => {
+    fetchAvailableSubjects();
+    setShowAddSubject(true);
+  };
+
+  // Add subject to class
+  const handleAddSubject = async (subjectId: string) => {
+    try {
+      // Add subject to class
+      const { error } = await supabase
+        .from('class_subjects')
+        .insert({ class_id: classData.id, subject_id: subjectId });
+
+      if (error) {
+        console.error("Error adding subject to class:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to add subject to class.",
+        });
+        return;
+      }
+
+      // Refresh subject lists
+      await fetchAvailableSubjects();
+      
+      // Find subject in available subjects and add to class subjects
+      const subject = availableSubjects.find(s => s.id === subjectId);
+      if (subject) {
+        setSubjects(prev => [...prev, subject]);
+      }
+
+      toast({
+        title: "Success",
+        description: "Subject added to class successfully.",
+      });
+
+    } catch (error: any) {
+      console.error("Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `An unexpected error occurred: ${error.message}`,
+      });
+    }
+  };
+
+  // Remove subject from class
+  const handleRemoveSubject = async (subjectId: string) => {
+    try {
+      // Remove subject from class
+      const { error } = await supabase
+        .from('class_subjects')
+        .delete()
+        .eq('class_id', classData.id)
+        .eq('subject_id', subjectId);
+
+      if (error) {
+        console.error("Error removing subject from class:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to remove subject from class.",
+        });
+        return;
+      }
+
+      // Remove subject from state
+      setSubjects(prev => prev.filter(s => s.id !== subjectId));
+
+      toast({
+        title: "Success",
+        description: "Subject removed from class successfully.",
+      });
+
+    } catch (error: any) {
+      console.error("Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `An unexpected error occurred: ${error.message}`,
+      });
+    }
+  };
 
   return (
     <>
@@ -44,7 +224,7 @@ const ClassSubjectsSection: React.FC<ClassSubjectsSectionProps> = ({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setShowAddSubject(true)}
+              onClick={handleOpenAddSubject}
             >
               <BookPlus className="h-4 w-4 mr-2" />
               Add Subject
@@ -52,7 +232,11 @@ const ClassSubjectsSection: React.FC<ClassSubjectsSectionProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          {subjects.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-4 text-gray-500">
+              Loading subjects...
+            </div>
+          ) : subjects.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {subjects.map(subject => (
                 <Badge 
@@ -65,7 +249,7 @@ const ClassSubjectsSection: React.FC<ClassSubjectsSectionProps> = ({
                     variant="ghost" 
                     size="sm" 
                     className="h-4 w-4 p-0 ml-1" 
-                    onClick={() => onRemoveSubject(subject.id)}
+                    onClick={() => handleRemoveSubject(subject.id)}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -107,7 +291,7 @@ const ClassSubjectsSection: React.FC<ClassSubjectsSectionProps> = ({
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => onAddSubject(subject.id)}
+                          onClick={() => handleAddSubject(subject.id)}
                         >
                           <Plus className="h-4 w-4 mr-2" />
                           Add
