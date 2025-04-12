@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 export const useClassData = () => {
   const { user } = useAuth();
   const [classes, setClasses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -32,14 +32,21 @@ export const useClassData = () => {
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to load classes",
+            description: `Failed to load classes: ${error.message}`,
           });
+          setClasses([]);
           return;
         }
         
         setClasses(data || []);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error:", error);
+        setClasses([]);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `An unexpected error occurred: ${error.message || "Unknown error"}`,
+        });
       } finally {
         setLoading(false);
       }

@@ -69,14 +69,17 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
 
   const handleSubmit = async (data: ClassFormValues) => {
     try {
+      // Create the payload with null for teacherId if not provided
+      const payload = {
+        name: data.name,
+        section: data.section,
+        teacher_id: data.teacherId || null
+      };
+      
       // Insert the new class into Supabase
       const { data: newClass, error } = await supabase
         .from('classes')
-        .insert({
-          name: data.name,
-          section: data.section,
-          teacher_id: data.teacherId || null
-        })
+        .insert(payload)
         .select();
         
       if (error) {
@@ -84,7 +87,7 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to create class. Please try again.",
+          description: `Failed to create class: ${error.message}`,
         });
         return;
       }

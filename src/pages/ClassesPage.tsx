@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { mockClasses } from '@/data/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Grid, List } from 'lucide-react';
@@ -11,43 +10,17 @@ import { Class } from '@/types';
 import ClassesGridView from '@/components/classes/ClassesGridView';
 import ClassesListView from '@/components/classes/ClassesListView';
 import ClassesPageHeader from '@/components/classes/ClassesPageHeader';
+import { useClassData } from '@/hooks/useClassData';
 
 const ClassesPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [classes, setClasses] = useState<Class[]>(mockClasses);
   const [classFormOpen, setClassFormOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-
-  const userClasses = React.useMemo(() => {
-    if (!user) return [];
-    
-    if (user.role === 'admin') {
-      return classes;
-    } else if (user.role === 'teacher') {
-      return classes.filter(c => c.teacherId === user.id);
-    }
-    
-    return classes.filter(c => c.students.includes(user.id));
-  }, [user, classes]);
+  const { classes, loading } = useClassData();
 
   const handleAddClass = (classData: any) => {
-    const newClass: Class = {
-      id: `class-${Date.now()}`,
-      name: classData.name,
-      section: classData.section,
-      teacherId: classData.teacherId || undefined,
-      students: [],
-      subjects: [],
-    };
-    
-    setClasses([...classes, newClass]);
     setClassFormOpen(false);
-    
-    toast({
-      title: "Success",
-      description: `Class ${classData.name} ${classData.section} has been created successfully.`,
-    });
   };
 
   const handleManageClass = (classId: string) => {
@@ -58,7 +31,7 @@ const ClassesPage: React.FC = () => {
   };
 
   const handleUpdateClass = (updatedClass: Class) => {
-    setClasses(classes.map(c => c.id === updatedClass.id ? updatedClass : c));
+    // This will be handled by Supabase and the useClassData hook
   };
 
   const handleCloseClassDetail = () => {
@@ -74,30 +47,50 @@ const ClassesPage: React.FC = () => {
         onAddClass={() => setClassFormOpen(true)}
       />
 
-      <Tabs defaultValue="grid">
-        <TabsList className="mb-4">
-          <TabsTrigger value="grid" className="flex items-center">
-            <Grid className="h-4 w-4 mr-1" /> Grid View
-          </TabsTrigger>
-          <TabsTrigger value="list" className="flex items-center">
-            <List className="h-4 w-4 mr-1" /> List View
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="grid">
-          <ClassesGridView 
-            classes={userClasses}
-            onManageClass={handleManageClass}
-          />
-        </TabsContent>
-        
-        <TabsContent value="list">
-          <ClassesListView 
-            classes={userClasses}
-            onManageClass={handleManageClass}
-          />
-        </TabsContent>
-      </Tabs>
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-gray-500">Loading classes...</div>
+        </div>
+      ) : classes.length === 0 ? (
+        <div className="text-center p-8 border rounded-lg bg-gray-50 mt-4">
+          <h3 className="text-lg font-medium mb-2">No classes found</h3>
+          <p className="text-gray-500 mb-4">
+            {canAddClass 
+              ? "No classes have been created yet. Create your first class to get started."
+              : "No classes have been assigned to you yet."}
+          </p>
+          {canAddClass && (
+            <Button onClick={() => setClassFormOpen(true)} className="mt-2">
+              Create Class
+            </Button>
+          )}
+        </div>
+      ) : (
+        <Tabs defaultValue="grid">
+          <TabsList className="mb-4">
+            <TabsTrigger value="grid" className="flex items-center">
+              <Grid className="h-4 w-4 mr-1" /> Grid View
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center">
+              <List className="h-4 w-4 mr-1" /> List View
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="grid">
+            <ClassesGridView 
+              classes={classes}
+              onManageClass={handleManageClass}
+            />
+          </TabsContent>
+          
+          <TabsContent value="list">
+            <ClassesListView 
+              classes={classes}
+              onManageClass={handleManageClass}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
       
       <ClassFormDialog 
         open={classFormOpen} 
