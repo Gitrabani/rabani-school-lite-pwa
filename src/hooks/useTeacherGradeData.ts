@@ -11,7 +11,10 @@ export const useTeacherGradeData = (user: any) => {
   
   const { classes } = useClassData();
   
-  const subjects = selectedClass ? getTeacherSubjects(selectedClass, user) : [];
+  // Only try to get subjects if we have a selected class and a user
+  const subjects = (selectedClass && user) 
+    ? getTeacherSubjects(selectedClass, user) 
+    : [];
   
   const { studentGrades, loading, newGradeValues, setNewGradeValues } = useStudentGrades(
     selectedClass, 
@@ -38,9 +41,11 @@ export const useTeacherGradeData = (user: any) => {
 function getTeacherSubjects(classId: string, user: any) {
   if (!classId || !user) return [];
   
+  // Find the class by ID
   const classObj = mockClasses.find(c => c.id === classId);
   if (!classObj) return [];
   
+  // Return subjects that match both the teacher ID and are included in the class
   return mockSubjects.filter(s => 
     s.teacherId === user.id && 
     classObj.subjects.includes(s.id)

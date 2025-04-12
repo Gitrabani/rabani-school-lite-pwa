@@ -13,6 +13,12 @@ export const useClassData = () => {
     const fetchClasses = async () => {
       setLoading(true);
       try {
+        if (!user) {
+          setClasses([]);
+          setLoading(false);
+          return;
+        }
+        
         let query = supabase.from('classes').select('*');
         
         if (user?.role === 'teacher') {
@@ -39,9 +45,7 @@ export const useClassData = () => {
       }
     };
     
-    if (user) {
-      fetchClasses();
-    }
+    fetchClasses();
   }, [user]);
 
   return { classes, loading };

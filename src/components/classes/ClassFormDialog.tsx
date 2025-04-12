@@ -32,7 +32,7 @@ import { mockUsers } from "@/data/mockData";
 import { Class } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/auth/AuthProvider";
+import { useAuth } from "@/context/AuthContext";
 
 // Define the form schema with Zod
 const classFormSchema = z.object({
@@ -77,8 +77,7 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
           section: data.section,
           teacher_id: data.teacherId || null
         })
-        .select()
-        .single();
+        .select();
         
       if (error) {
         console.error("Error creating class:", error);
