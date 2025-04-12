@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +10,7 @@ import ClassesGridView from '@/components/classes/ClassesGridView';
 import ClassesListView from '@/components/classes/ClassesListView';
 import ClassesPageHeader from '@/components/classes/ClassesPageHeader';
 import { useClassData } from '@/hooks/useClassData';
+import { Button } from '@/components/ui/button';
 
 const ClassesPage: React.FC = () => {
   const { user } = useAuth();
