@@ -42,7 +42,7 @@ const classFormSchema = z.object({
   section: z.string().min(1, {
     message: "Section is required.",
   }),
-  teacherId: z.string().optional(),
+  teacherId: z.string().uuid().optional(),
 });
 
 type ClassFormValues = z.infer<typeof classFormSchema>;
@@ -69,12 +69,16 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
 
   const handleSubmit = async (data: ClassFormValues) => {
     try {
+      console.log("Form data for class creation:", data);
+      
       // Create the payload with null for teacherId if not provided
       const payload = {
         name: data.name,
         section: data.section,
         teacher_id: data.teacherId || null
       };
+      
+      console.log("Payload for Supabase insert:", payload);
       
       // Insert the new class into Supabase
       const { data: newClass, error } = await supabase
@@ -102,7 +106,7 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
       
       // Reset the form
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error:", error);
       toast({
         variant: "destructive",
@@ -157,7 +161,7 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
                   <FormLabel>Class Teacher</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value}
+                    value={field.value || ""}
                   >
                     <FormControl>
                       <SelectTrigger>

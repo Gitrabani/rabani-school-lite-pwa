@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -17,9 +18,11 @@ const ClassesPage: React.FC = () => {
   const { toast } = useToast();
   const [classFormOpen, setClassFormOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const { classes, loading } = useClassData();
+  const { classes, loading, refetch } = useClassData();
 
-  const handleAddClass = (classData: any) => {
+  const handleAddClass = () => {
+    // This will be triggered when the form is submitted - we'll refetch classes
+    refetch();
     setClassFormOpen(false);
   };
 
