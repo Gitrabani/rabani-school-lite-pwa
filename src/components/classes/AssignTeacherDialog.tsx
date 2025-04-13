@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,18 +44,9 @@ const AssignTeacherDialog = ({
   const form = useForm<AssignTeacherFormValues>({
     resolver: zodResolver(assignTeacherSchema),
     defaultValues: {
-      teacherId: classData.teacherId || undefined,
+      teacherId: undefined,
     },
   });
-
-  // Reset form when the dialog opens with current teacher
-  useEffect(() => {
-    if (open) {
-      form.reset({
-        teacherId: classData.teacherId || undefined,
-      });
-    }
-  }, [open, classData, form]);
 
   const handleSubmit = async (data: AssignTeacherFormValues) => {
     setIsSubmitting(true);
@@ -111,7 +102,8 @@ const AssignTeacherDialog = ({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <TeacherSelect 
               form={form} 
-              name="teacherId" 
+              name="teacherId"
+              defaultValue={classData.teacherId || undefined}
             />
 
             <DialogFooter>

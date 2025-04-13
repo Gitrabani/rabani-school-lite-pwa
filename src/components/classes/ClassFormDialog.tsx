@@ -59,7 +59,19 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
     },
   });
 
+  // Reset form when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      form.reset({
+        name: "",
+        section: "",
+        teacherId: undefined,
+      });
+    }
+  }, [open, form]);
+
   const handleSubmit = async (data: ClassFormValues) => {
+    setIsLoading(true);
     try {
       console.log("Form data for class creation:", data);
       
@@ -105,6 +117,8 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
         title: "Error",
         description: `An unexpected error occurred: ${error.message || "Unknown error"}`,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -124,9 +138,9 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Class Name</FormLabel>
+                  <FormLabel>Class Name<span className="text-destructive ml-1">*</span></FormLabel>
                   <FormControl>
-                    <Input placeholder="Grade 10" {...field} />
+                    <Input placeholder="Grade 10" {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -137,9 +151,9 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
               name="section"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Section</FormLabel>
+                  <FormLabel>Section<span className="text-destructive ml-1">*</span></FormLabel>
                   <FormControl>
-                    <Input placeholder="A" {...field} />
+                    <Input placeholder="A" {...field} disabled={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,10 +165,13 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
               name="teacherId" 
               label="Class Teacher"
               placeholder="Select a teacher"
+              disabled={isLoading}
             />
 
             <DialogFooter>
-              <Button type="submit">Create Class</Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Creating..." : "Create Class"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
