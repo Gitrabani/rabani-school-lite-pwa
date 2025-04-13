@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import PageHeader from '../components/shared/PageHeader';
@@ -18,6 +17,7 @@ import UserSearchHeader from '@/components/users/UserSearchHeader';
 import UserTable from '@/components/users/UserTable';
 import { useUserData } from '@/hooks/useUserData';
 import { useStudentDetails } from '@/hooks/useStudentDetails';
+import { useToast } from '@/hooks/use-toast';
 
 // This page should only be accessible by admins
 const UsersPage: React.FC = () => {
@@ -25,6 +25,7 @@ const UsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [userRole, setUserRole] = useState<'all' | UserRole>('all');
   const [userFormOpen, setUserFormOpen] = useState(false);
+  const { toast } = useToast();
 
   const { users, loading, fetchUsers, deleteUser } = useUserData();
   const { 
