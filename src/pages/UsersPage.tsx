@@ -67,9 +67,12 @@ const UsersPage: React.FC = () => {
       
       // Create a map of user metadata for quick lookup
       const userMetadataMap = new Map();
+      
       if (usersData && usersData.users) {
-        usersData.users.forEach(user => {
-          userMetadataMap.set(user.id, user.user_metadata);
+        usersData.users.forEach((user: any) => {
+          if (user && user.id) {
+            userMetadataMap.set(user.id, user.user_metadata || {});
+          }
         });
       }
 
@@ -159,13 +162,14 @@ const UsersPage: React.FC = () => {
     if (user.role === 'student') {
       try {
         // Fetch user metadata to get student details
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user.id);
+        const { data, error } = await supabase.auth.admin.getUserById(user.id);
         
-        if (userError) {
-          throw userError;
+        if (error) {
+          throw error;
         }
         
-        const userMetadata = userData?.user?.user_metadata || {};
+        // Safely access user metadata
+        const userMetadata = data?.user?.user_metadata || {};
         
         // Combine user data with metadata
         const studentData: Student = {
