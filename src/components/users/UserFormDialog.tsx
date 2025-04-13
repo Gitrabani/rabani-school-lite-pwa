@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -96,6 +97,7 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
     try {
       console.log("Creating new user with role:", data.role);
       
+      // Create authentication user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -117,7 +119,48 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
         return;
       }
       
-      console.log("User created successfully:", authData);
+      const userId = authData.user?.id;
+      
+      if (!userId) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to create user: No user ID returned",
+        });
+        return;
+      }
+      
+      console.log("User created successfully with ID:", userId);
+      
+      // For students, save additional student information
+      if (data.role === 'student') {
+        const { error: studentError } = await supabase
+          .from('student_profiles')
+          .insert({
+            user_id: userId,
+            admission_number: data.admissionNumber,
+            class_name: data.class,
+            section: data.section,
+            roll_number: data.rollNumber,
+            date_of_birth: data.dateOfBirth,
+            gender: data.gender,
+            address: data.address,
+            phone_number: data.phoneNumber,
+            parent_name: data.parentName,
+            parent_email: data.parentEmail,
+            parent_phone: data.parentPhone
+          });
+          
+        if (studentError) {
+          console.error("Error creating student profile:", studentError);
+          toast({
+            variant: "destructive",
+            title: "Warning",
+            description: `User created, but failed to save student details: ${studentError.message}`,
+          });
+          // We still want to proceed since the user was created
+        }
+      }
       
       toast({
         title: "Success",

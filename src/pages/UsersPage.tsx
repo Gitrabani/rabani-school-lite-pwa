@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { mockUsers } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../integrations/supabase/client';
 import PageHeader from '../components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,54 +26,74 @@ import { Badge } from '@/components/ui/badge';
 import UserFormDialog from '@/components/users/UserFormDialog';
 import { Student, User, UserRole } from '@/types';
 import StudentDetailsDialog from '@/components/users/StudentDetailsDialog';
+import { useAuth } from '@/context/AuthContext';
 
 // This page should only be accessible by admins
 const UsersPage: React.FC = () => {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [userRole, setUserRole] = useState<'all' | UserRole>('all');
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [userFormOpen, setUserFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
+  // Fetch users from Supabase
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Failed to load users: ${error.message}`,
+        });
+        return;
+      }
+
+      // Map profiles to User objects
+      const fetchedUsers: User[] = profiles.map(profile => ({
+        id: profile.id,
+        name: profile.full_name || 'Unnamed User',
+        email: '', // Email is not stored in the profiles table for privacy
+        role: profile.role as UserRole,
+        profileImage: profile.avatar_url || '',
+      }));
+
+      setUsers(fetchedUsers);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `An unexpected error occurred: ${error.message}`,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   // Filter users based on search and role
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                          (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesRole = userRole === 'all' || user.role === userRole;
     return matchesSearch && matchesRole;
   });
 
   const handleAddUser = (userData: any) => {
-    const newUser = {
-      id: `user-${Date.now()}`,
-      name: userData.name,
-      email: userData.email,
-      role: userData.role as UserRole,
-      profileImage: '', // Default empty profile image
-      ...(userData.role === 'student' && {
-        admissionNumber: userData.admissionNumber,
-        class: userData.class,
-        section: userData.section,
-        rollNumber: userData.rollNumber,
-        dateOfBirth: userData.dateOfBirth,
-        gender: userData.gender,
-        address: userData.address,
-        phoneNumber: userData.phoneNumber,
-        parentName: userData.parentName,
-        parentEmail: userData.parentEmail,
-        parentPhone: userData.parentPhone,
-      })
-    };
-    
-    setUsers([...users, newUser]);
+    // After adding a user, refresh the users list
+    fetchUsers();
     setUserFormOpen(false);
-    
-    toast({
-      title: "Success",
-      description: `User ${userData.name} has been created successfully.`,
-    });
   };
 
   const handleEditUser = (userId: string) => {
@@ -83,20 +103,78 @@ const UsersPage: React.FC = () => {
     });
   };
 
-  const handleDeleteUser = (userId: string) => {
-    // In a real app, you would call an API to delete the user
-    setUsers(users.filter(user => user.id !== userId));
-    
-    toast({
-      title: "User Deleted",
-      description: `User has been removed from the system.`,
-    });
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // In a real application with proper authentication, 
+      // you would need admin privileges and the service role key
+      // to delete users from auth.users
+      
+      // For now, we'll just delete the profile
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Update the local state
+      setUsers(users.filter(user => user.id !== userId));
+      
+      toast({
+        title: "User Deleted",
+        description: `User has been removed from the system.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Failed to delete user: ${error.message}`,
+      });
+    }
   };
   
-  const handleViewStudentDetails = (user: User) => {
+  const handleViewStudentDetails = async (user: User) => {
     if (user.role === 'student') {
-      setSelectedStudent(user as Student);
-      setDetailsDialogOpen(true);
+      try {
+        // Fetch student details from student_profiles table
+        const { data, error } = await supabase
+          .from('student_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Combine user data with student profile data
+        const studentData: Student = {
+          ...user,
+          role: 'student',
+          admissionNumber: data?.admission_number || '',
+          class: data?.class_name || '',
+          section: data?.section || '',
+          rollNumber: data?.roll_number || '',
+          dateOfBirth: data?.date_of_birth || '',
+          gender: data?.gender || '',
+          address: data?.address || '',
+          phoneNumber: data?.phone_number || '',
+          parentName: data?.parent_name || '',
+          parentEmail: data?.parent_email || '',
+          parentPhone: data?.parent_phone || '',
+        };
+        
+        setSelectedStudent(studentData);
+        setDetailsDialogOpen(true);
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Failed to load student details: ${error.message}`,
+        });
+      }
     }
   };
 
@@ -151,15 +229,20 @@ const UsersPage: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>User</TableHead>
-                      <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers.length === 0 ? (
+                    {loading ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
+                        <TableCell colSpan={3} className="h-24 text-center">
+                          Loading users...
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="h-24 text-center">
                           No users found
                         </TableCell>
                       </TableRow>
@@ -175,7 +258,6 @@ const UsersPage: React.FC = () => {
                               {user.name}
                             </div>
                           </TableCell>
-                          <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <Badge className={roleColorMap[user.role]}>
                               {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
@@ -207,6 +289,7 @@ const UsersPage: React.FC = () => {
                               size="icon"
                               onClick={() => handleDeleteUser(user.id)}
                               title="Delete user"
+                              disabled={user.id === currentUser?.id} // Prevent deleting yourself
                             >
                               <Trash className="h-4 w-4" />
                               <span className="sr-only">Delete</span>
