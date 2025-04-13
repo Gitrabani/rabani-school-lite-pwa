@@ -56,15 +56,35 @@ const UsersPage: React.FC = () => {
         });
         return;
       }
+      
+      // Fetch user data including metadata
+      const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers();
+      
+      if (usersError) {
+        console.error("Error fetching user metadata:", usersError);
+        // Still continue with profile data
+      }
+      
+      // Create a map of user metadata for quick lookup
+      const userMetadataMap = new Map();
+      if (usersData && usersData.users) {
+        usersData.users.forEach(user => {
+          userMetadataMap.set(user.id, user.user_metadata);
+        });
+      }
 
       // Map profiles to User objects
-      const fetchedUsers: User[] = profiles.map(profile => ({
-        id: profile.id,
-        name: profile.full_name || 'Unnamed User',
-        email: '', // Email is not stored in the profiles table for privacy
-        role: profile.role as UserRole,
-        profileImage: profile.avatar_url || '',
-      }));
+      const fetchedUsers: User[] = profiles.map(profile => {
+        const userMetadata = userMetadataMap.get(profile.id) || {};
+        
+        return {
+          id: profile.id,
+          name: profile.full_name || 'Unnamed User',
+          email: '', // Email is not stored in the profiles table for privacy
+          role: profile.role as UserRole,
+          profileImage: profile.avatar_url || '',
+        };
+      });
 
       setUsers(fetchedUsers);
     } catch (error: any) {
@@ -138,32 +158,30 @@ const UsersPage: React.FC = () => {
   const handleViewStudentDetails = async (user: User) => {
     if (user.role === 'student') {
       try {
-        // Fetch student details from student_profiles table
-        const { data, error } = await supabase
-          .from('student_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+        // Fetch user metadata to get student details
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user.id);
         
-        if (error) {
-          throw error;
+        if (userError) {
+          throw userError;
         }
         
-        // Combine user data with student profile data
+        const userMetadata = userData?.user?.user_metadata || {};
+        
+        // Combine user data with metadata
         const studentData: Student = {
           ...user,
           role: 'student',
-          admissionNumber: data?.admission_number || '',
-          class: data?.class_name || '',
-          section: data?.section || '',
-          rollNumber: data?.roll_number || '',
-          dateOfBirth: data?.date_of_birth || '',
-          gender: data?.gender || '',
-          address: data?.address || '',
-          phoneNumber: data?.phone_number || '',
-          parentName: data?.parent_name || '',
-          parentEmail: data?.parent_email || '',
-          parentPhone: data?.parent_phone || '',
+          admissionNumber: userMetadata.admission_number || '',
+          class: userMetadata.class_name || '',
+          section: userMetadata.section || '',
+          rollNumber: userMetadata.roll_number || '',
+          dateOfBirth: userMetadata.date_of_birth || '',
+          gender: userMetadata.gender || '',
+          address: userMetadata.address || '',
+          phoneNumber: userMetadata.phone_number || '',
+          parentName: userMetadata.parent_name || '',
+          parentEmail: userMetadata.parent_email || '',
+          parentPhone: userMetadata.parent_phone || '',
         };
         
         setSelectedStudent(studentData);

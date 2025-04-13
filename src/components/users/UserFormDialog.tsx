@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -104,7 +103,21 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
         options: {
           data: {
             full_name: data.name,
-            role: data.role
+            role: data.role,
+            // Store student details in the user metadata
+            ...(data.role === 'student' && {
+              admission_number: data.admissionNumber,
+              class_name: data.class,
+              section: data.section,
+              roll_number: data.rollNumber,
+              date_of_birth: data.dateOfBirth,
+              gender: data.gender,
+              address: data.address,
+              phone_number: data.phoneNumber,
+              parent_name: data.parentName,
+              parent_email: data.parentEmail,
+              parent_phone: data.parentPhone
+            })
           }
         }
       });
@@ -132,34 +145,9 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
       
       console.log("User created successfully with ID:", userId);
       
-      // For students, save additional student information
+      // Update the profiles table with additional fields for students if needed
       if (data.role === 'student') {
-        const { error: studentError } = await supabase
-          .from('student_profiles')
-          .insert({
-            user_id: userId,
-            admission_number: data.admissionNumber,
-            class_name: data.class,
-            section: data.section,
-            roll_number: data.rollNumber,
-            date_of_birth: data.dateOfBirth,
-            gender: data.gender,
-            address: data.address,
-            phone_number: data.phoneNumber,
-            parent_name: data.parentName,
-            parent_email: data.parentEmail,
-            parent_phone: data.parentPhone
-          });
-          
-        if (studentError) {
-          console.error("Error creating student profile:", studentError);
-          toast({
-            variant: "destructive",
-            title: "Warning",
-            description: `User created, but failed to save student details: ${studentError.message}`,
-          });
-          // We still want to proceed since the user was created
-        }
+        // We can update the profiles table with any additional fields if needed in the future
       }
       
       toast({
