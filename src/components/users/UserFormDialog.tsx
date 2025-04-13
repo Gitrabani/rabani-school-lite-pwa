@@ -343,7 +343,7 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
                         <FormLabel>Gender</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          value={field.value || ""}
+                          value={field.value || "not-specified"}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -354,6 +354,7 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
                             <SelectItem value="male">Male</SelectItem>
                             <SelectItem value="female">Female</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="not-specified">Not Specified</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

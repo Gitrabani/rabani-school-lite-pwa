@@ -56,7 +56,7 @@ const GradeEntryForm: React.FC<GradeEntryFormProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {classes.length === 0 ? (
-                  <SelectItem value="loading" disabled>Loading classes...</SelectItem>
+                  <SelectItem value="no-classes" disabled>Loading classes...</SelectItem>
                 ) : (
                   classes.map(c => (
                     <SelectItem key={c.id} value={c.id}>
