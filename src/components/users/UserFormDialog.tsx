@@ -1,7 +1,7 @@
+
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,52 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-
-const userFormSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  role: z.enum(["admin", "teacher", "student", "parent"], {
-    required_error: "Please select a role.",
-  }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
-  }),
-  admissionNumber: z.string().optional(),
-  class: z.string().optional(),
-  section: z.string().optional(),
-  rollNumber: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  gender: z.enum(["male", "female", "other", ""]).optional(),
-  address: z.string().optional(),
-  phoneNumber: z.string().optional(),
-  parentName: z.string().optional(),
-  parentEmail: z.string().optional(),
-  parentPhone: z.string().optional(),
-});
-
-type UserFormValues = z.infer<typeof userFormSchema>;
+import { createUser } from "@/services/authService";
+import { userFormSchema, UserFormValues } from "./UserFormSchema";
+import UserBasicInfoFields from "./UserBasicInfoFields";
+import StudentInfoFields from "./StudentInfoFields";
+import ParentInfoFields from "./ParentInfoFields";
 
 interface UserFormDialogProps {
   open: boolean;
@@ -81,7 +42,7 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
       section: "",
       rollNumber: "",
       dateOfBirth: "",
-      gender: "",
+      gender: "not-specified",
       address: "",
       phoneNumber: "",
       parentName: "",
@@ -96,41 +57,7 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
     try {
       console.log("Creating new user with role:", data.role);
       
-      // Create authentication user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.name,
-            role: data.role,
-            // Store student details in the user metadata
-            ...(data.role === 'student' && {
-              admission_number: data.admissionNumber,
-              class_name: data.class,
-              section: data.section,
-              roll_number: data.rollNumber,
-              date_of_birth: data.dateOfBirth,
-              gender: data.gender,
-              address: data.address,
-              phone_number: data.phoneNumber,
-              parent_name: data.parentName,
-              parent_email: data.parentEmail,
-              parent_phone: data.parentPhone
-            })
-          }
-        }
-      });
-      
-      if (authError) {
-        console.error("Error creating user:", authError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `Failed to create user: ${authError.message}`,
-        });
-        return;
-      }
+      const authData = await createUser(data);
       
       const userId = authData.user?.id;
       
@@ -144,11 +71,6 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
       }
       
       console.log("User created successfully with ID:", userId);
-      
-      // Update the profiles table with additional fields for students if needed
-      if (data.role === 'student') {
-        // We can update the profiles table with any additional fields if needed in the future
-      }
       
       toast({
         title: "Success",
@@ -169,11 +91,9 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
     }
   };
 
-  const watchRole = form.watch("role");
-  
-  React.useEffect(() => {
-    setSelectedRole(watchRole);
-  }, [watchRole]);
+  const handleRoleChange = (role: string) => {
+    setSelectedRole(role);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -184,264 +104,26 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
             Create a new user account for the school management system.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="user@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>User Role</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setSelectedRole(value);
-                      }}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="teacher">Teacher</SelectItem>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="parent">Parent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+        <FormProvider {...form}>
+          <Form>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <UserBasicInfoFields onRoleChange={handleRoleChange} />
 
-            {selectedRole === "student" && (
-              <>
-                <h3 className="text-lg font-medium">Student Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="admissionNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Admission Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="A12345" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="rollNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Roll Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="R123" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              {selectedRole === "student" && (
+                <>
+                  <StudentInfoFields />
+                  <ParentInfoFields />
+                </>
+              )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="class"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Class</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Grade 10" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="section"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Section</FormLabel>
-                        <FormControl>
-                          <Input placeholder="A" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="dateOfBirth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date of Birth</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Gender</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || "not-specified"}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                            <SelectItem value="not-specified">Not Specified</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 234 567 8900" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Input placeholder="123 School Street, City" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <h3 className="text-lg font-medium">Parent Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="parentName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Parent's Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Jane Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="parentEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Parent's Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="parent@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="parentPhone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Parent's Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 234 567 8900" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
-
-            <DialogFooter>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create User"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create User"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );
