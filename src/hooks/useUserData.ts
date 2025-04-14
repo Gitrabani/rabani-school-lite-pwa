@@ -19,7 +19,7 @@ export const useUserData = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // First, fetch all profiles from the profiles table
+      // Fetch all profiles from the profiles table
       const { data: profiles, error } = await supabase
         .from('profiles')
         .select('*');
@@ -33,46 +33,19 @@ export const useUserData = () => {
         return;
       }
       
-      // Create a map of user data for quick access
-      const userMap = new Map();
-      
+      // Transform profiles into user objects
       if (profiles) {
-        profiles.forEach(profile => {
-          userMap.set(profile.id, {
-            id: profile.id,
-            name: profile.full_name || 'Unnamed User',
-            email: '', // We'll update this from auth if available
-            role: profile.role as UserRole,
-            profileImage: profile.avatar_url || '',
-          });
-        });
-      }
-      
-      // If we can access auth data, try to get emails
-      try {
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        const userList: User[] = profiles.map(profile => ({
+          id: profile.id,
+          name: profile.full_name || 'Unnamed User',
+          email: '', // We can't easily get emails without admin access
+          role: profile.role as UserRole,
+          profileImage: profile.avatar_url || '',
+        }));
         
-        if (!authError && authData && authData.users) {
-          const authUsers = authData.users as AuthUser[];
-          
-          if (Array.isArray(authUsers)) {
-            authUsers.forEach(authUser => {
-              if (authUser && typeof authUser === 'object' && 'id' in authUser && authUser.id && userMap.has(authUser.id)) {
-                const userData = userMap.get(authUser.id);
-                if (userData) {
-                  userData.email = 'email' in authUser ? (authUser.email || '') : '';
-                  userMap.set(authUser.id, userData);
-                }
-              }
-            });
-          }
-        }
-      } catch (authError) {
-        console.log("Could not fetch auth users data:", authError);
-        // Continue with limited user data
+        setUsers(userList);
+        console.log('Fetched users:', userList);
       }
-      
-      setUsers(Array.from(userMap.values()));
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -87,19 +60,7 @@ export const useUserData = () => {
   // Delete user operation
   const deleteUser = async (userId: string) => {
     try {
-      // First try to delete the auth user if we have access
-      try {
-        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-        if (authError) {
-          console.log("Could not delete auth user:", authError);
-          // Continue with deleting profile
-        }
-      } catch (error) {
-        console.log("Auth deletion not available:", error);
-        // Continue with deleting profile
-      }
-
-      // Delete the profile
+      // We can only delete the profile since we don't have admin access
       const { error } = await supabase
         .from('profiles')
         .delete()
