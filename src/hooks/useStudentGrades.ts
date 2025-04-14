@@ -1,15 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '../context/AuthContext';
-import { mockClasses, mockSubjects, mockUsers } from '../data/mockData';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export const useStudentGrades = (selectedClass: string, selectedSubject: string, selectedExamType: string) => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [studentGrades, setStudentGrades] = useState<any[]>([]);
   const [newGradeValues, setNewGradeValues] = useState<Record<string, string>>({});
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchStudentsWithGrades = async () => {
@@ -17,40 +15,68 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
       
       setLoading(true);
       try {
-        const classObj = mockClasses.find(c => c.id === selectedClass);
-        if (!classObj) {
+        // Get students for this class
+        const { data: classStudentsData, error: classStudentsError } = await supabase
+          .from('class_students')
+          .select('student_id')
+          .eq('class_id', selectedClass);
+        
+        if (classStudentsError) {
+          console.error("Error fetching class students:", classStudentsError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load students for this class",
+          });
           setStudentGrades([]);
           return;
         }
         
-        const studentList = mockUsers
-          .filter(u => u.role === 'student' && classObj.students.includes(u.id));
-        
-        if (!studentList.length) {
+        if (!classStudentsData.length) {
           setStudentGrades([]);
           setLoading(false);
           return;
         }
 
-        const { data: grades, error } = await supabase
-          .from('grades')
-          .select('*')
-          .eq('class_id', selectedClass)
-          .eq('subject_id', selectedSubject)
-          .eq('exam_type', selectedExamType);
+        // Get student profiles
+        const studentIds = classStudentsData.map(cs => cs.student_id);
         
-        if (error) {
-          console.error("Error fetching grades:", error);
+        const { data: studentProfiles, error: studentProfilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', studentIds);
+          
+        if (studentProfilesError) {
+          console.error("Error fetching student profiles:", studentProfilesError);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to load grades",
+            description: "Failed to load student profiles",
           });
           setStudentGrades([]);
           return;
         }
 
-        const studentsWithGrades = studentList.map(student => {
+        // Get grades for these students in this subject/exam
+        const { data: grades, error: gradesError } = await supabase
+          .from('grades')
+          .select('*')
+          .eq('class_id', selectedClass)
+          .eq('subject_id', selectedSubject)
+          .eq('exam_type', selectedExamType)
+          .in('student_id', studentIds);
+        
+        if (gradesError) {
+          console.error("Error fetching grades:", gradesError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load grades",
+          });
+        }
+
+        // Map students with their grades
+        const studentsWithGrades = studentProfiles.map(student => {
           const grade = grades?.find(g => g.student_id === student.id);
           
           if (grade?.marks) {
@@ -58,14 +84,21 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
           }
           
           return {
-            ...student,
+            id: student.id,
+            name: student.full_name || 'Unknown Student',
+            role: 'student',
             grade: grade || null
           };
         });
         
         setStudentGrades(studentsWithGrades);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `An unexpected error occurred: ${error.message}`,
+        });
         setStudentGrades([]);
       } finally {
         setLoading(false);
@@ -73,7 +106,7 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
     };
     
     fetchStudentsWithGrades();
-  }, [selectedClass, selectedSubject, selectedExamType]);
+  }, [selectedClass, selectedSubject, selectedExamType, toast]);
 
   return { studentGrades, loading, newGradeValues, setNewGradeValues };
 };
