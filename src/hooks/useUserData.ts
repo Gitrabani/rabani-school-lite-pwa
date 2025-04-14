@@ -30,28 +30,33 @@ export const useUserData = () => {
       // Create a map of user data for quick access
       const userMap = new Map();
       
-      profiles.forEach(profile => {
-        userMap.set(profile.id, {
-          id: profile.id,
-          name: profile.full_name || 'Unnamed User',
-          email: '', // We'll update this from auth if available
-          role: profile.role as UserRole,
-          profileImage: profile.avatar_url || '',
+      if (profiles) {
+        profiles.forEach(profile => {
+          userMap.set(profile.id, {
+            id: profile.id,
+            name: profile.full_name || 'Unnamed User',
+            email: '', // We'll update this from auth if available
+            role: profile.role as UserRole,
+            profileImage: profile.avatar_url || '',
+          });
         });
-      });
+      }
       
       // If we can access auth data, try to get emails
       try {
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
         
-        if (!authError && authUsers) {
-          authUsers.users.forEach(authUser => {
-            if (userMap.has(authUser.id)) {
-              const userData = userMap.get(authUser.id);
-              userData.email = authUser.email || '';
-              userMap.set(authUser.id, userData);
-            }
-          });
+        if (!authError && authData) {
+          const authUsers = authData.users;
+          if (Array.isArray(authUsers)) {
+            authUsers.forEach(authUser => {
+              if (authUser && authUser.id && userMap.has(authUser.id)) {
+                const userData = userMap.get(authUser.id);
+                userData.email = authUser.email || '';
+                userMap.set(authUser.id, userData);
+              }
+            });
+          }
         }
       } catch (authError) {
         console.log("Could not fetch auth users data:", authError);

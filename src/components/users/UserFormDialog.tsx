@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,26 +104,25 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit }: UserFormDialogProps) =
             Create a new user account for the school management system.
           </DialogDescription>
         </DialogHeader>
-        <FormProvider {...form}>
-          <Form>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              <UserBasicInfoFields onRoleChange={handleRoleChange} />
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <UserBasicInfoFields onRoleChange={handleRoleChange} />
 
-              {selectedRole === "student" && (
-                <>
-                  <StudentInfoFields />
-                  <ParentInfoFields />
-                </>
-              )}
+            {selectedRole === "student" && (
+              <>
+                <StudentInfoFields />
+                <ParentInfoFields />
+              </>
+            )}
 
-              <DialogFooter>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create User"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </FormProvider>
+            <DialogFooter>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create User"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
