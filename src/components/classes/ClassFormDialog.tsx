@@ -75,8 +75,8 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
     try {
       console.log("Form data for class creation:", data);
       
-      // Create the payload with null for teacherId if not provided
-      // Check if teacherId is 'none' and set it to null
+      // Create the payload
+      // Setting teacher_id to null if it's 'none' or not provided
       const payload = {
         name: data.name,
         section: data.section,

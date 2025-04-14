@@ -56,7 +56,7 @@ const AssignTeacherDialog = ({
       // Update the class in Supabase
       const { error } = await supabase
         .from('classes')
-        .update({ teacher_id: data.teacherId || null })
+        .update({ teacher_id: data.teacherId === 'none' ? null : data.teacherId || null })
         .eq('id', classData.id);
         
       if (error) {
@@ -71,7 +71,7 @@ const AssignTeacherDialog = ({
       
       toast({
         title: "Success",
-        description: `Teacher has been ${data.teacherId ? 'assigned to' : 'removed from'} the class.`,
+        description: `Teacher has been ${data.teacherId && data.teacherId !== 'none' ? 'assigned to' : 'removed from'} the class.`,
       });
       
       // Notify parent component about the update
