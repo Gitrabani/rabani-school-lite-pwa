@@ -23,6 +23,7 @@ export const useClassData = () => {
       console.log("Fetching classes for user role:", user.role);
       let query = supabase.from('classes').select('*');
       
+      // Filter based on user role
       if (user?.role === 'teacher') {
         query = query.eq('teacher_id', user.id);
       }
@@ -40,42 +41,49 @@ export const useClassData = () => {
         return;
       }
       
+      console.log("Raw classes data:", classesData);
+      
       // Convert the data to match our Class type
       const fetchedClasses: Class[] = [];
       
       // Process each class
-      for (const classItem of classesData) {
-        // Fetch students for this class
-        const { data: studentData, error: studentError } = await supabase
-          .from('class_students')
-          .select('student_id')
-          .eq('class_id', classItem.id);
+      for (const classItem of classesData || []) {
+        try {
+          // Fetch students for this class
+          const { data: studentData, error: studentError } = await supabase
+            .from('class_students')
+            .select('student_id')
+            .eq('class_id', classItem.id);
+            
+          if (studentError) {
+            console.error("Error fetching students for class", classItem.id, ":", studentError);
+          }
           
-        if (studentError) {
-          console.error("Error fetching students:", studentError);
-        }
-        
-        // Fetch subjects for this class
-        const { data: subjectData, error: subjectError } = await supabase
-          .from('class_subjects')
-          .select('subject_id')
-          .eq('class_id', classItem.id);
+          // Fetch subjects for this class
+          const { data: subjectData, error: subjectError } = await supabase
+            .from('class_subjects')
+            .select('subject_id')
+            .eq('class_id', classItem.id);
+            
+          if (subjectError) {
+            console.error("Error fetching subjects for class", classItem.id, ":", subjectError);
+          }
           
-        if (subjectError) {
-          console.error("Error fetching subjects:", subjectError);
+          // Create the class object with real data
+          fetchedClasses.push({
+            id: classItem.id,
+            name: classItem.name,
+            section: classItem.section,
+            teacherId: classItem.teacher_id || undefined,
+            students: studentData ? studentData.map(s => s.student_id) : [],
+            subjects: subjectData ? subjectData.map(s => s.subject_id) : []
+          });
+        } catch (classError) {
+          console.error("Error processing class data for class", classItem.id, ":", classError);
         }
-        
-        // Create the class object with real data
-        fetchedClasses.push({
-          id: classItem.id,
-          name: classItem.name,
-          section: classItem.section,
-          teacherId: classItem.teacher_id || undefined,
-          students: studentData ? studentData.map(s => s.student_id) : [],
-          subjects: subjectData ? subjectData.map(s => s.subject_id) : []
-        });
       }
       
+      console.log("Processed classes:", fetchedClasses);
       setClasses(fetchedClasses);
     } catch (error: any) {
       console.error("Error:", error);

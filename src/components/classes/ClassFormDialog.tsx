@@ -76,10 +76,11 @@ const ClassFormDialog = ({ open, onOpenChange, onSubmit }: ClassFormDialogProps)
       console.log("Form data for class creation:", data);
       
       // Create the payload with null for teacherId if not provided
+      // Check if teacherId is 'none' and set it to null
       const payload = {
         name: data.name,
         section: data.section,
-        teacher_id: data.teacherId || null
+        teacher_id: data.teacherId === 'none' ? null : data.teacherId || null
       };
       
       console.log("Payload for Supabase insert:", payload);
