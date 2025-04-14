@@ -4,6 +4,12 @@ import { supabase } from '../integrations/supabase/client';
 import { User, UserRole } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
+// Define a type for auth users to help TypeScript understand the structure
+type AuthUser = {
+  id: string;
+  email: string | null;
+};
+
 export const useUserData = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
@@ -46,14 +52,17 @@ export const useUserData = () => {
       try {
         const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
         
-        if (!authError && authData) {
-          const authUsers = authData.users;
+        if (!authError && authData && authData.users) {
+          const authUsers = authData.users as AuthUser[];
+          
           if (Array.isArray(authUsers)) {
             authUsers.forEach(authUser => {
-              if (authUser && authUser.id && userMap.has(authUser.id)) {
+              if (authUser && typeof authUser === 'object' && 'id' in authUser && authUser.id && userMap.has(authUser.id)) {
                 const userData = userMap.get(authUser.id);
-                userData.email = authUser.email || '';
-                userMap.set(authUser.id, userData);
+                if (userData) {
+                  userData.email = 'email' in authUser ? (authUser.email || '') : '';
+                  userMap.set(authUser.id, userData);
+                }
               }
             });
           }
