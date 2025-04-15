@@ -18,7 +18,7 @@ export const useUserData = () => {
       // Fetch all profiles from the profiles table with explicit columns
       const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, role')
+        .select('*')
         .order('full_name');
 
       if (error) {
@@ -34,14 +34,13 @@ export const useUserData = () => {
       
       // Transform profiles into user objects
       if (profiles && profiles.length > 0) {
-        console.log(`Successfully fetched ${profiles.length} profiles`);
+        console.log(`Successfully fetched ${profiles.length} profiles:`, profiles);
         
         // Get auth emails for each profile if possible
-        // Note: This is a workaround as we can't directly get emails without admin access
         const userList: User[] = profiles.map(profile => ({
           id: profile.id,
           name: profile.full_name || 'Unnamed User',
-          email: '', // We'll leave email empty as we can't easily get it
+          email: '', // We'll leave email empty as we can't easily get it without admin access
           role: profile.role as UserRole || 'student',
           profileImage: profile.avatar_url || '',
         }));

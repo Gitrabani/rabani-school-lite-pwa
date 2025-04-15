@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { mockUsers, mockSubjects } from '@/data/mockData';
 import { Class } from '@/types';
 import { Users, BookOpen } from 'lucide-react';
 import {
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useUserData } from '@/hooks/useUserData';
 
 interface ClassesGridViewProps {
   classes: Class[];
@@ -20,12 +20,12 @@ interface ClassesGridViewProps {
 }
 
 const ClassesGridView: React.FC<ClassesGridViewProps> = ({ classes, onManageClass }) => {
+  const { users } = useUserData();
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {classes.map(classItem => {
-        const teacherName = mockUsers.find(u => u.id === classItem.teacherId)?.name || 'Unassigned';
-        const students = mockUsers.filter(u => u.role === 'student' && classItem.students.includes(u.id));
-        const subjects = mockSubjects.filter(s => classItem.subjects.includes(s.id));
+        const teacherName = users.find(u => u.id === classItem.teacherId)?.name || 'Unassigned';
         
         return (
           <Card key={classItem.id} className="hover:shadow-md transition-shadow">
@@ -38,18 +38,20 @@ const ClassesGridView: React.FC<ClassesGridViewProps> = ({ classes, onManageClas
                 <div>
                   <h4 className="text-sm font-medium mb-1 flex items-center">
                     <Users className="h-4 w-4 mr-2" />
-                    Students ({students.length})
+                    Students ({classItem.students.length})
                   </h4>
                   <div className="flex flex-wrap gap-1">
-                    {students.length > 0 ? (
-                      students.slice(0, 3).map(student => (
-                        <Badge key={student.id} variant="outline">{student.name}</Badge>
+                    {classItem.students.length > 0 ? (
+                      classItem.students.slice(0, 3).map((studentId, index) => (
+                        <Badge key={index} variant="outline">
+                          {users.find(u => u.id === studentId)?.name || `Student ${index + 1}`}
+                        </Badge>
                       ))
                     ) : (
                       <span className="text-sm text-gray-500">No students assigned</span>
                     )}
-                    {students.length > 3 && (
-                      <Badge variant="outline">+{students.length - 3} more</Badge>
+                    {classItem.students.length > 3 && (
+                      <Badge variant="outline">+{classItem.students.length - 3} more</Badge>
                     )}
                   </div>
                 </div>
@@ -57,18 +59,18 @@ const ClassesGridView: React.FC<ClassesGridViewProps> = ({ classes, onManageClas
                 <div>
                   <h4 className="text-sm font-medium mb-1 flex items-center">
                     <BookOpen className="h-4 w-4 mr-2" />
-                    Subjects ({subjects.length})
+                    Subjects ({classItem.subjects.length})
                   </h4>
                   <div className="flex flex-wrap gap-1">
-                    {subjects.length > 0 ? (
-                      subjects.slice(0, 3).map(subject => (
-                        <Badge key={subject.id} variant="outline">{subject.name}</Badge>
+                    {classItem.subjects.length > 0 ? (
+                      classItem.subjects.slice(0, 3).map((subjectId, index) => (
+                        <Badge key={index} variant="outline">{subjectId}</Badge>
                       ))
                     ) : (
                       <span className="text-sm text-gray-500">No subjects assigned</span>
                     )}
-                    {subjects.length > 3 && (
-                      <Badge variant="outline">+{subjects.length - 3} more</Badge>
+                    {classItem.subjects.length > 3 && (
+                      <Badge variant="outline">+{classItem.subjects.length - 3} more</Badge>
                     )}
                   </div>
                 </div>

@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { mockUsers } from '@/data/mockData';
 import { Class } from '@/types';
 import { Users, BookOpen } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +16,6 @@ const ClassesListView: React.FC<ClassesListViewProps> = ({ classes, onManageClas
       <CardContent className="p-0">
         <div className="divide-y">
           {classes.map(classItem => {
-            const teacherName = mockUsers.find(u => u.id === classItem.teacherId)?.name || 'Unassigned';
             const studentCount = classItem.students.length;
             const subjectCount = classItem.subjects.length;
             
@@ -25,7 +23,9 @@ const ClassesListView: React.FC<ClassesListViewProps> = ({ classes, onManageClas
               <div key={classItem.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50">
                 <div>
                   <h3 className="font-medium">{classItem.name} {classItem.section}</h3>
-                  <p className="text-sm text-gray-500">Teacher: {teacherName}</p>
+                  <p className="text-sm text-gray-500">
+                    Teacher ID: {classItem.teacherId || 'Unassigned'}
+                  </p>
                 </div>
                 
                 <div className="flex mt-2 md:mt-0 space-x-4 items-center">
