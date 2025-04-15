@@ -19,10 +19,13 @@ export const useTeachers = (shouldFetch: boolean = true) => {
       
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
+        console.log('Fetching teachers from profiles...');
+        
+        const { data: profiles, error } = await supabase
           .from('profiles')
           .select('id, full_name')
-          .eq('role', 'teacher');
+          .eq('role', 'teacher')
+          .order('full_name');
         
         if (error) {
           console.error("Error fetching teachers:", error);
@@ -34,12 +37,12 @@ export const useTeachers = (shouldFetch: boolean = true) => {
           return;
         }
         
-        const teachersList = (data || []).map(teacher => ({
+        const teachersList = (profiles || []).map(teacher => ({
           id: teacher.id,
           name: teacher.full_name || 'Unknown'
         }));
         
-        console.log(`Fetched ${teachersList.length} teachers`);
+        console.log(`Fetched ${teachersList.length} teachers:`, teachersList);
         setTeachers(teachersList);
       } catch (error: any) {
         console.error("Error:", error);
