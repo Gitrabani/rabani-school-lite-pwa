@@ -1,5 +1,4 @@
-
-import { Json } from '../integrations/supabase/types';
+import { Json as SupabaseJson } from '../integrations/supabase/types';
 
 export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
 
@@ -93,5 +92,5 @@ export interface Announcement {
   };
 }
 
-// Export Json type from Supabase for convenience
-export { Json };
+// Re-export Json type with 'export type' syntax
+export type { SupabaseJson as Json };

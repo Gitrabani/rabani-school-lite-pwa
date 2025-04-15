@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare } from 'lucide-react';
 import AnnouncementsList from './AnnouncementsList';
-import { Announcement } from '@/types';
+import { Announcement, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types';
 
@@ -42,7 +42,8 @@ export const DashboardAnnouncements: React.FC<DashboardAnnouncementsProps> = ({ 
             authorId: item.author_id || '',
             date: item.created_at || new Date().toISOString(),
             audience: {
-              roles: audienceData?.roles || [],
+              // Explicitly cast roles to UserRole[] to fix the type error
+              roles: (audienceData?.roles || []) as UserRole[],
               classes: audienceData?.classes || [],
               specific: audienceData?.specific || []
             }
@@ -97,4 +98,3 @@ export const DashboardAnnouncements: React.FC<DashboardAnnouncementsProps> = ({ 
     </Card>
   );
 };
-
