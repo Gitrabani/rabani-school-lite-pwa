@@ -2,7 +2,7 @@
 import { supabase } from '../integrations/supabase/client';
 import { Announcement, UserRole } from '../types';
 import { Database } from '../integrations/supabase/types';
-import { Json } from '../integrations/supabase/types';
+import { Json } from '../types';
 
 export const fetchAnnouncements = async (): Promise<Announcement[]> => {
   const { data, error } = await supabase

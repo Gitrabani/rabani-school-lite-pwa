@@ -1,4 +1,6 @@
 
+import { Json } from '../integrations/supabase/types';
+
 export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
 
 export interface User {
@@ -90,3 +92,6 @@ export interface Announcement {
     specific?: string[]; // specific user IDs
   };
 }
+
+// Export Json type from Supabase for convenience
+export { Json };

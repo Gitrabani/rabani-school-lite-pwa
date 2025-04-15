@@ -8,19 +8,7 @@ import AnnouncementsList from '../components/dashboard/AnnouncementsList';
 import { Users, BookOpen, Award, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  audience: {
-    roles?: string[];
-    classes?: string[];
-    specific?: string[];
-  };
-  created_at: string;
-  author_id?: string;
-}
+import { Announcement, Json } from '../types';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -44,7 +32,27 @@ const DashboardPage: React.FC = () => {
         }
 
         console.log('Announcements fetched:', data);
-        setAnnouncements(data || []);
+        
+        // Transform the Supabase data to match our Announcement type
+        const transformedAnnouncements = data?.map(item => {
+          // Parse the audience JSON into our expected structure
+          const audienceObj = typeof item.audience === 'object' ? item.audience : {};
+          
+          return {
+            id: item.id,
+            title: item.title,
+            content: item.content,
+            authorId: item.author_id || '',
+            date: item.created_at || new Date().toISOString(),
+            audience: {
+              roles: Array.isArray(audienceObj.roles) ? audienceObj.roles : undefined,
+              classes: Array.isArray(audienceObj.classes) ? audienceObj.classes : undefined,
+              specific: Array.isArray(audienceObj.specific) ? audienceObj.specific : undefined
+            }
+          };
+        }) || [];
+        
+        setAnnouncements(transformedAnnouncements);
       } catch (error) {
         console.error('Failed to fetch announcements:', error);
       }
