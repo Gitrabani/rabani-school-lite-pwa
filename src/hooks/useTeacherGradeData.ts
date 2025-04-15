@@ -1,58 +1,34 @@
 
 import { useState, useEffect } from 'react';
-import { useClassData } from '@/hooks/useClassData';
-import { useStudentGrades } from '@/hooks/useStudentGrades';
 import { supabase } from '@/integrations/supabase/client';
-import { Subject } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+import { useClassData } from '@/hooks/useClassData';
+import { useSubjects } from '@/hooks/useSubjects';
+import { useStudentGrades } from '@/hooks/useStudentGrades';
 
 export const useTeacherGradeData = (user: any) => {
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedExamType, setSelectedExamType] = useState<string>('midterm');
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  
-  const { classes } = useClassData();
-  
-  const { studentGrades, loading, newGradeValues, setNewGradeValues } = useStudentGrades(
-    selectedClass, 
-    selectedSubject, 
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedExamType, setSelectedExamType] = useState('Midterm');
+  const [newGradeValues, setNewGradeValues] = useState<Record<string, string>>({});
+
+  const { classes, loading: classesLoading } = useClassData();
+  const { subjects } = useSubjects(selectedClass);
+  const { studentGrades, loading } = useStudentGrades(
+    selectedClass,
+    selectedSubject,
     selectedExamType
   );
 
-  // Fetch subjects when selected class changes
+  console.log('Classes:', classes);
+  console.log('Selected class:', selectedClass);
+  console.log('Subjects:', subjects);
+  console.log('Student grades:', studentGrades);
+
+  // Reset subject when class changes
   useEffect(() => {
-    const fetchSubjects = async () => {
-      if (!selectedClass || !user) return;
-      
-      try {
-        // Get subjects for this class
-        const { data: classSubjectsData, error } = await supabase
-          .from('class_subjects')
-          .select('subject_id')
-          .eq('class_id', selectedClass);
-        
-        if (error) {
-          console.error("Error fetching class subjects:", error);
-          return;
-        }
-        
-        // Format subjects data
-        const teacherSubjects = classSubjectsData.map(item => ({
-          id: item.subject_id,
-          name: item.subject_id, // Using ID as name since we don't have a subjects table
-          teacherId: user.id,
-          classes: [selectedClass]
-        }));
-        
-        setSubjects(teacherSubjects);
-      } catch (error) {
-        console.error("Error fetching subjects:", error);
-        setSubjects([]);
-      }
-    };
-    
-    fetchSubjects();
-  }, [selectedClass, user]);
+    setSelectedSubject('');
+  }, [selectedClass]);
 
   return {
     selectedClass,
@@ -64,7 +40,7 @@ export const useTeacherGradeData = (user: any) => {
     classes,
     subjects,
     studentGrades,
-    loading,
+    loading: loading || classesLoading,
     newGradeValues,
     setNewGradeValues
   };

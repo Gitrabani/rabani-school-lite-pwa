@@ -1,129 +1,296 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/auth/AuthProvider';
-import { mockAnnouncements, mockClasses, mockGrades, mockSubjects, mockUsers } from '../data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '../components/shared/PageHeader';
 import StatsCard from '../components/dashboard/StatsCard';
 import AnnouncementsList from '../components/dashboard/AnnouncementsList';
 import { Users, BookOpen, Award, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+
+interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  audience: {
+    roles?: string[];
+    classes?: string[];
+    specific?: string[];
+  };
+  created_at: string;
+  author_id?: string;
+}
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        console.log('Fetching announcements...');
+        const { data, error } = await supabase
+          .from('announcements')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching announcements:', error);
+          return;
+        }
+
+        console.log('Announcements fetched:', data);
+        setAnnouncements(data || []);
+      } catch (error) {
+        console.error('Failed to fetch announcements:', error);
+      }
+    };
+
+    const fetchStats = async () => {
+      if (!user) return;
+
+      try {
+        console.log('Fetching statistics...');
+        setLoading(true);
+
+        // Count students
+        const { data: studentsData, error: studentsError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'student');
+
+        if (studentsError) {
+          console.error('Error fetching students:', studentsError);
+        }
+
+        // Count teachers
+        const { data: teachersData, error: teachersError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'teacher');
+
+        if (teachersError) {
+          console.error('Error fetching teachers:', teachersError);
+        }
+
+        // Count classes
+        const { data: classesData, error: classesError } = await supabase
+          .from('classes')
+          .select('id');
+
+        if (classesError) {
+          console.error('Error fetching classes:', classesError);
+        }
+
+        // Get unique subjects
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('class_subjects')
+          .select('subject_id');
+
+        if (subjectsError) {
+          console.error('Error fetching subjects:', subjectsError);
+        }
+
+        // Create unique subjects set
+        const uniqueSubjects = new Set(subjectsData?.map(s => s.subject_id) || []);
+        
+        console.log('Stats fetched successfully');
+        
+        // Create stats based on user role
+        const newStats = [];
+        
+        if (user.role === 'admin') {
+          newStats.push(
+            { 
+              title: 'Total Students', 
+              value: studentsData?.length || 0, 
+              icon: <Users size={20} />, 
+              color: 'blue'
+            },
+            { 
+              title: 'Total Classes', 
+              value: classesData?.length || 0, 
+              icon: <BookOpen size={20} />, 
+              color: 'green'
+            },
+            { 
+              title: 'Total Teachers', 
+              value: teachersData?.length || 0, 
+              icon: <Users size={20} />, 
+              color: 'purple'
+            },
+            { 
+              title: 'Total Subjects', 
+              value: uniqueSubjects.size, 
+              icon: <BookOpen size={20} />, 
+              color: 'orange'
+            },
+          );
+        } else if (user.role === 'teacher') {
+          // Get teacher classes
+          const { data: teacherClasses, error: teacherClassesError } = await supabase
+            .from('classes')
+            .select('*')
+            .eq('teacher_id', user.id);
+
+          if (teacherClassesError) {
+            console.error('Error fetching teacher classes:', teacherClassesError);
+          }
+
+          // Get student count in teacher's classes
+          let totalStudents = 0;
+          if (teacherClasses?.length) {
+            const classIds = teacherClasses.map(c => c.id);
+            const { data: classStudents, error: classStudentsError } = await supabase
+              .from('class_students')
+              .select('student_id')
+              .in('class_id', classIds);
+
+            if (classStudentsError) {
+              console.error('Error fetching class students:', classStudentsError);
+            } else {
+              // Count unique students
+              const uniqueStudents = new Set(classStudents?.map(cs => cs.student_id) || []);
+              totalStudents = uniqueStudents.size;
+            }
+          }
+
+          newStats.push(
+            { 
+              title: 'My Classes', 
+              value: teacherClasses?.length || 0, 
+              icon: <BookOpen size={20} />, 
+              color: 'blue'
+            },
+            { 
+              title: 'My Students', 
+              value: totalStudents, 
+              icon: <Users size={20} />, 
+              color: 'green'
+            }
+          );
+        } else if (user.role === 'student') {
+          // Get student class
+          const { data: studentClass, error: studentClassError } = await supabase
+            .from('class_students')
+            .select('class_id')
+            .eq('student_id', user.id);
+
+          if (studentClassError) {
+            console.error('Error fetching student class:', studentClassError);
+          }
+
+          // Get class details
+          let className = 'None';
+          let subjectCount = 0;
+          
+          if (studentClass?.length) {
+            const classId = studentClass[0].class_id;
+            
+            const { data: classDetails, error: classDetailsError } = await supabase
+              .from('classes')
+              .select('name, section')
+              .eq('id', classId)
+              .single();
+
+            if (classDetailsError) {
+              console.error('Error fetching class details:', classDetailsError);
+            } else if (classDetails) {
+              className = `${classDetails.name} ${classDetails.section}`;
+            }
+
+            // Get subject count
+            const { data: subjects, error: subjectsError } = await supabase
+              .from('class_subjects')
+              .select('subject_id')
+              .eq('class_id', classId);
+
+            if (subjectsError) {
+              console.error('Error fetching subjects:', subjectsError);
+            } else {
+              subjectCount = subjects?.length || 0;
+            }
+          }
+
+          // Get grades
+          const { data: grades, error: gradesError } = await supabase
+            .from('grades')
+            .select('id')
+            .eq('student_id', user.id);
+
+          if (gradesError) {
+            console.error('Error fetching grades:', gradesError);
+          }
+
+          newStats.push(
+            { 
+              title: 'My Class', 
+              value: className, 
+              icon: <BookOpen size={20} />, 
+              color: 'blue'
+            },
+            { 
+              title: 'My Subjects', 
+              value: subjectCount, 
+              icon: <BookOpen size={20} />, 
+              color: 'green'
+            },
+            { 
+              title: 'Graded Assessments', 
+              value: grades?.length || 0, 
+              icon: <Award size={20} />, 
+              color: 'purple'
+            }
+          );
+        }
+
+        setStats(newStats);
+
+      } catch (error: any) {
+        console.error('Error fetching stats:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Failed to load dashboard data: ${error.message}`,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnnouncements();
+    fetchStats();
+  }, [user, toast]);
 
   // Filter announcements based on user role
-  const filteredAnnouncements = mockAnnouncements.filter(announcement => {
+  const filteredAnnouncements = announcements.filter(announcement => {
     if (!user) return false;
     
     // Check if announcement is for this user's role
-    if (announcement.audience.roles && announcement.audience.roles.includes(user.role)) {
+    if (announcement.audience?.roles && announcement.audience.roles.includes(user.role)) {
       return true;
     }
     
-    // Check if announcement is for classes this user belongs to
-    if (announcement.audience.classes && user.role === 'student') {
-      const userClass = mockClasses.find(c => c.students.includes(user.id));
-      if (userClass && announcement.audience.classes.includes(userClass.id)) {
-        return true;
-      }
-    }
-    
     // Check if announcement is for specific users
-    if (announcement.audience.specific && announcement.audience.specific.includes(user.id)) {
+    if (announcement.audience?.specific && announcement.audience.specific.includes(user.id)) {
       return true;
     }
     
     return false;
   });
 
-  // Statistics based on user role
-  let stats = [];
-  if (user?.role === 'admin') {
-    stats = [
-      { 
-        title: 'Total Students', 
-        value: mockUsers.filter(u => u.role === 'student').length, 
-        icon: <Users size={20} />, 
-        color: 'blue'
-      },
-      { 
-        title: 'Total Classes', 
-        value: mockClasses.length, 
-        icon: <BookOpen size={20} />, 
-        color: 'green'
-      },
-      { 
-        title: 'Total Teachers', 
-        value: mockUsers.filter(u => u.role === 'teacher').length, 
-        icon: <Users size={20} />, 
-        color: 'purple'
-      },
-      { 
-        title: 'Total Subjects', 
-        value: mockSubjects.length, 
-        icon: <BookOpen size={20} />, 
-        color: 'orange'
-      },
-    ];
-  } else if (user?.role === 'teacher') {
-    const teacherClasses = mockClasses.filter(c => c.teacherId === user.id);
-    const teacherSubjects = mockSubjects.filter(s => s.teacherId === user.id);
-    
-    stats = [
-      { 
-        title: 'My Classes', 
-        value: teacherClasses.length, 
-        icon: <BookOpen size={20} />, 
-        color: 'blue'
-      },
-      { 
-        title: 'My Subjects', 
-        value: teacherSubjects.length, 
-        icon: <BookOpen size={20} />, 
-        color: 'green'
-      },
-      { 
-        title: 'Total Students', 
-        value: teacherClasses.reduce((acc, c) => acc + c.students.length, 0), 
-        icon: <Users size={20} />, 
-        color: 'purple'
-      },
-    ];
-  } else if (user?.role === 'student') {
-    const studentClass = mockClasses.find(c => c.students.includes(user.id));
-    const studentSubjects = studentClass ? studentClass.subjects.length : 0;
-    const studentGrades = mockGrades.filter(g => g.studentId === user.id);
-    
-    stats = [
-      { 
-        title: 'My Class', 
-        value: studentClass ? `${studentClass.name} ${studentClass.section}` : 'None', 
-        icon: <BookOpen size={20} />, 
-        color: 'blue'
-      },
-      { 
-        title: 'My Subjects', 
-        value: studentSubjects, 
-        icon: <BookOpen size={20} />, 
-        color: 'green'
-      },
-      { 
-        title: 'Recent Grades', 
-        value: studentGrades.length, 
-        icon: <Award size={20} />, 
-        color: 'purple'
-      },
-    ];
-  }
-
   return (
     <div>
       <PageHeader 
-        title={`Welcome, ${user?.name}`} 
-        description={`${user?.role.charAt(0).toUpperCase() + user?.role.slice(1)} Dashboard`} 
+        title={`Welcome, ${user?.name || 'User'}`} 
+        description={`${user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : ''} Dashboard`} 
       />
       
-      <div className="stats-grid">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat, index) => (
           <StatsCard 
             key={index}
@@ -145,7 +312,13 @@ const DashboardPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <AnnouncementsList announcements={filteredAnnouncements} />
+              {loading ? (
+                <p>Loading announcements...</p>
+              ) : filteredAnnouncements.length > 0 ? (
+                <AnnouncementsList announcements={filteredAnnouncements} />
+              ) : (
+                <p className="text-muted-foreground">No announcements available.</p>
+              )}
             </CardContent>
           </Card>
         </div>
