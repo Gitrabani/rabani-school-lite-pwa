@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from '@/types';
+import { Link } from 'react-router-dom';
 
 interface QuickLinksProps {
   user: User | null;
@@ -17,27 +18,30 @@ export const QuickLinks: React.FC<QuickLinksProps> = ({ user }) => {
         <nav className="space-y-2">
           {user?.role === 'teacher' && (
             <>
-              <a href="/attendance" className="block p-2 hover:bg-gray-50 rounded-md">Mark Attendance</a>
-              <a href="/grades" className="block p-2 hover:bg-gray-50 rounded-md">Enter Grades</a>
+              <Link to="/attendance" className="block p-2 hover:bg-gray-50 rounded-md">
+                Mark Attendance
+              </Link>
+              <Link to="/grades" className="block p-2 hover:bg-gray-50 rounded-md">
+                Enter Grades
+              </Link>
             </>
           )}
           {user?.role === 'student' && (
             <>
-              <a href="/attendance" className="block p-2 hover:bg-gray-50 rounded-md">View My Attendance</a>
-              <a href="/grades" className="block p-2 hover:bg-gray-50 rounded-md">View My Grades</a>
+              <Link to="/attendance" className="block p-2 hover:bg-gray-50 rounded-md">View My Attendance</Link>
+              <Link to="/grades" className="block p-2 hover:bg-gray-50 rounded-md">View My Grades</Link>
             </>
           )}
           {user?.role === 'admin' && (
             <>
-              <a href="/users" className="block p-2 hover:bg-gray-50 rounded-md">Manage Users</a>
-              <a href="/classes" className="block p-2 hover:bg-gray-50 rounded-md">Manage Classes</a>
-              <a href="/announcements" className="block p-2 hover:bg-gray-50 rounded-md">Create Announcement</a>
+              <Link to="/users" className="block p-2 hover:bg-gray-50 rounded-md">Manage Users</Link>
+              <Link to="/classes" className="block p-2 hover:bg-gray-50 rounded-md">Manage Classes</Link>
+              <Link to="/announcements" className="block p-2 hover:bg-gray-50 rounded-md">Create Announcement</Link>
             </>
           )}
-          <a href="/announcements" className="block p-2 hover:bg-gray-50 rounded-md">All Announcements</a>
+          <Link to="/announcements" className="block p-2 hover:bg-gray-50 rounded-md">All Announcements</Link>
         </nav>
       </CardContent>
     </Card>
   );
 };
-
