@@ -39,6 +39,8 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
     const fetchClassStudents = async () => {
       setIsLoading(true);
       try {
+        console.log("Fetching students for class:", classData.id);
+        
         // Get all students from this class
         const { data: classStudentsData, error: classStudentsError } = await supabase
           .from('class_students')
@@ -55,6 +57,7 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
           return;
         }
 
+        console.log("Class students data:", classStudentsData);
         const studentIds = classStudentsData.map(cs => cs.student_id);
         
         if (studentIds.length > 0) {
@@ -75,6 +78,7 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
             return;
           }
 
+          console.log("Students data:", studentsData);
           const formattedStudents = studentsData.map(student => ({
             id: student.id,
             name: student.full_name || 'Unknown',
@@ -105,6 +109,8 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
   // Fetch available students (not in this class)
   const fetchAvailableStudents = async () => {
     try {
+      console.log("Fetching available students not in class:", classData.id);
+      
       // Get all students from this class
       const { data: classStudentsData, error: classStudentsError } = await supabase
         .from('class_students')
@@ -116,9 +122,10 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
         return;
       }
 
-      const studentIds = classStudentsData.map(cs => cs.student_id);
+      const existingStudentIds = classStudentsData.map(cs => cs.student_id);
+      console.log("Existing student IDs in this class:", existingStudentIds);
       
-      // Get all students not in this class
+      // Get all students with role 'student'
       const { data: availableStudentsData, error: availableStudentsError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
@@ -134,11 +141,15 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
         return;
       }
 
+      console.log("All student profiles:", availableStudentsData);
+      
       // Filter out students already in this class
       const filteredStudents = availableStudentsData.filter(student => 
-        !studentIds.includes(student.id)
+        !existingStudentIds.includes(student.id)
       );
 
+      console.log("Filtered available students:", filteredStudents);
+      
       const formattedStudents = filteredStudents.map(student => ({
         id: student.id,
         name: student.full_name || 'Unknown',
@@ -167,10 +178,13 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
   // Add student to class
   const handleAddStudent = async (studentId: string) => {
     try {
+      console.log("Adding student to class. Student ID:", studentId, "Class ID:", classData.id);
+      
       // Add student to class
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('class_students')
-        .insert({ class_id: classData.id, student_id: studentId });
+        .insert({ class_id: classData.id, student_id: studentId })
+        .select();
 
       if (error) {
         console.error("Error adding student to class:", error);
@@ -182,13 +196,15 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
         return;
       }
 
-      // Refresh student lists
-      await fetchAvailableStudents();
+      console.log("Student added successfully:", data);
       
-      // Find student in available students and add to class students
+      // Find student in available students
       const student = availableStudents.find(s => s.id === studentId);
       if (student) {
+        // Update students list
         setStudents(prev => [...prev, student]);
+        // Remove from available students
+        setAvailableStudents(prev => prev.filter(s => s.id !== studentId));
       }
 
       toast({
@@ -209,6 +225,8 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
   // Remove student from class
   const handleRemoveStudent = async (studentId: string) => {
     try {
+      console.log("Removing student from class. Student ID:", studentId, "Class ID:", classData.id);
+      
       // Remove student from class
       const { error } = await supabase
         .from('class_students')
@@ -228,6 +246,11 @@ const ClassStudentsSection: React.FC<ClassStudentsSectionProps> = ({
 
       // Remove student from state
       setStudents(prev => prev.filter(s => s.id !== studentId));
+      
+      // Refresh available students if the dialog is open
+      if (showAddStudent) {
+        fetchAvailableStudents();
+      }
 
       toast({
         title: "Success",
