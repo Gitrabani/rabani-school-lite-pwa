@@ -28,7 +28,7 @@ const AddStudentDialog: React.FC<AddStudentDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add Student</DialogTitle>
           <DialogDescription>
@@ -54,6 +54,7 @@ const AddStudentDialog: React.FC<AddStudentDialogProps> = ({
                         variant="outline" 
                         size="sm" 
                         onClick={() => onAddStudent(student.id)}
+                        aria-label={`Add ${student.name}`}
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add

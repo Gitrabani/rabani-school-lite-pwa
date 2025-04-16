@@ -30,20 +30,29 @@ const StudentsTable: React.FC<StudentsTableProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {students.map(student => (
-          <TableRow key={student.id}>
-            <TableCell>{student.name}</TableCell>
-            <TableCell>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => onRemoveStudent(student.id)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+        {students.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={2} className="text-center py-6 text-muted-foreground">
+              No students in this class yet
             </TableCell>
           </TableRow>
-        ))}
+        ) : (
+          students.map(student => (
+            <TableRow key={student.id}>
+              <TableCell>{student.name}</TableCell>
+              <TableCell>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => onRemoveStudent(student.id)}
+                  aria-label={`Remove ${student.name}`}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
       </TableBody>
     </Table>
   );
