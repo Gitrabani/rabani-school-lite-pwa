@@ -41,10 +41,11 @@ export const useOwnGrades = () => {
           return;
         }
         
-        // Create a map of subject IDs to subjects for easy lookup
+        // Create a map of subject IDs to subject names for easy lookup
         const subjectMap: Record<string, string> = {};
         for (const subject of data || []) {
-          subjectMap[subject.subject_id] = subject.subject_id; // Using subject_id as name for now
+          // Using subject_id as name for now, can be enhanced later to fetch actual subject names
+          subjectMap[subject.subject_id] = subject.subject_id;
         }
         
         setSubjects(subjectMap);
@@ -60,13 +61,13 @@ export const useOwnGrades = () => {
 
   useEffect(() => {
     const fetchOwnGrades = async () => {
-      if (user?.role !== 'student') return;
+      if (!user || user.role !== 'student') return;
       
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from('grades')
-          .select('*, classes(*)')
+          .select('*')
           .eq('student_id', user.id);
         
         if (error) {
