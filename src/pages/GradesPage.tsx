@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth/AuthProvider';
 import PageHeader from '../components/shared/PageHeader';
 import StudentGradeView from '@/components/grades/StudentGradeView';
 import TeacherGradeView from '@/components/grades/TeacherGradeView';

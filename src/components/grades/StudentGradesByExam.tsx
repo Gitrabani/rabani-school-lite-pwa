@@ -3,14 +3,18 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { mockSubjects } from '@/data/mockData';
 
 interface StudentGradesByExamProps {
   ownGrades: any[];
   loading: boolean;
+  subjects: Record<string, string>;
 }
 
-const StudentGradesByExam: React.FC<StudentGradesByExamProps> = ({ ownGrades, loading }) => {
+const StudentGradesByExam: React.FC<StudentGradesByExamProps> = ({ 
+  ownGrades, 
+  loading, 
+  subjects 
+}) => {
   return (
     <Card>
       <CardHeader>
@@ -43,11 +47,11 @@ const StudentGradesByExam: React.FC<StudentGradesByExamProps> = ({ ownGrades, lo
                 </TableRow>
               ) : (
                 ownGrades.map(grade => {
-                  const subject = mockSubjects.find(s => s.id === grade.subject_id);
+                  const subjectName = subjects[grade.subject_id] || grade.subject_id || 'Unknown Subject';
                   return (
                     <TableRow key={grade.id}>
                       <TableCell className="font-medium">
-                        {subject?.name || 'Unknown Subject'}
+                        {subjectName}
                       </TableCell>
                       <TableCell>
                         {grade.exam_type.charAt(0).toUpperCase() + grade.exam_type.slice(1)}

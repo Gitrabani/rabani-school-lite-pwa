@@ -6,7 +6,7 @@ import StudentGradesByExam from './StudentGradesByExam';
 import { useOwnGrades } from '@/hooks/useOwnGrades';
 
 const StudentGradeView: React.FC = () => {
-  const { ownGrades, loading, gradesBySubject } = useOwnGrades();
+  const { ownGrades, loading, gradesBySubject, subjects } = useOwnGrades();
 
   return (
     <div>
@@ -26,7 +26,8 @@ const StudentGradeView: React.FC = () => {
         <TabsContent value="byExam">
           <StudentGradesByExam 
             ownGrades={ownGrades} 
-            loading={loading} 
+            loading={loading}
+            subjects={subjects}
           />
         </TabsContent>
       </Tabs>
