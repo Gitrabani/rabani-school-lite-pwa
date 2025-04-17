@@ -10,27 +10,48 @@ export const useOwnGrades = () => {
   const [loading, setLoading] = useState(false);
   const [ownGrades, setOwnGrades] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<Record<string, string>>({});
+  const [classId, setClassId] = useState<string | null>(null);
 
+  // First fetch the student's class ID
   useEffect(() => {
-    const fetchSubjects = async () => {
+    const fetchStudentClass = async () => {
       try {
         if (!user || user.role !== 'student') return;
 
-        // First get the student's class ID from class_students table
+        // Get the student's class ID from class_students table
         const { data: studentClassData, error: studentClassError } = await supabase
           .from('class_students')
           .select('class_id')
           .eq('student_id', user.id)
           .single();
         
-        if (studentClassError || !studentClassData) {
+        if (studentClassError) {
           console.error("Error fetching student class:", studentClassError);
           return;
         }
         
-        const classId = studentClassData.class_id;
+        if (studentClassData && studentClassData.class_id) {
+          setClassId(studentClassData.class_id);
+        } else {
+          console.log("Student is not assigned to any class yet");
+        }
+      } catch (error) {
+        console.error("Error fetching student class:", error);
+      }
+    };
+    
+    if (user?.role === 'student') {
+      fetchStudentClass();
+    }
+  }, [user]);
 
-        // Then fetch subject information for that class
+  // Then fetch subjects when classId is available
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        if (!classId || !user || user.role !== 'student') return;
+        
+        // Fetch subject information for that class
         const { data, error } = await supabase
           .from('class_subjects')
           .select('subject_id')
@@ -50,15 +71,16 @@ export const useOwnGrades = () => {
         
         setSubjects(subjectMap);
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Error fetching subjects:", error);
       }
     };
     
-    if (user?.role === 'student') {
+    if (classId) {
       fetchSubjects();
     }
-  }, [user]);
+  }, [classId, user]);
 
+  // Fetch grades when user is available
   useEffect(() => {
     const fetchOwnGrades = async () => {
       if (!user || user.role !== 'student') return;
@@ -104,5 +126,5 @@ export const useOwnGrades = () => {
     return acc;
   }, {});
 
-  return { ownGrades, loading, gradesBySubject, subjects };
+  return { ownGrades, loading, gradesBySubject, subjects, classId };
 };
