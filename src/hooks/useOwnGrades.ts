@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth/AuthProvider';
+import { Student } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
 export const useOwnGrades = () => {
@@ -13,10 +14,27 @@ export const useOwnGrades = () => {
   useEffect(() => {
     const fetchSubjects = async () => {
       try {
+        if (!user || user.role !== 'student') return;
+
+        // First get the student's class ID from class_students table
+        const { data: studentClassData, error: studentClassError } = await supabase
+          .from('class_students')
+          .select('class_id')
+          .eq('student_id', user.id)
+          .single();
+        
+        if (studentClassError || !studentClassData) {
+          console.error("Error fetching student class:", studentClassError);
+          return;
+        }
+        
+        const classId = studentClassData.class_id;
+
+        // Then fetch subject information for that class
         const { data, error } = await supabase
           .from('class_subjects')
-          .select('subject_id, classes!inner(*)')
-          .eq('classes.id', user?.class);
+          .select('subject_id')
+          .eq('class_id', classId);
         
         if (error) {
           console.error("Error fetching subjects:", error);
