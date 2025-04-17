@@ -53,7 +53,9 @@ export const useAttendance = () => {
       
       setLoading(true);
       try {
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        // Format date as ISO string and then take just the date part (yyyy-MM-dd)
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        console.log("Fetching attendance with date:", dateStr);
         
         const { data, error } = await supabase
           .from('attendance')
@@ -148,7 +150,8 @@ export const useAttendance = () => {
     setSavingAttendance(prev => ({ ...prev, [studentId]: true }));
     
     try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      // Format date as ISO string and then take just the date part (yyyy-MM-dd)
+      const dateStr = selectedDate.toISOString().split('T')[0];
       
       let attendanceId = attendanceData?.id;
       
