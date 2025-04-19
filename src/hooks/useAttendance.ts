@@ -4,7 +4,7 @@ import { useAttendanceState } from './useAttendanceState';
 import { useFetchClasses, useFetchAttendance, useFetchStudents } from './useAttendanceFetchers';
 import { handleMarkAttendance as markAttendance } from './useAttendanceActions';
 
-export const useAttendance = () => {
+export function useAttendance() {
   const { user } = useAuth();
   const {
     selectedDate, setSelectedDate,
@@ -44,4 +44,4 @@ export const useAttendance = () => {
     students,
     handleMarkAttendance
   };
-};
+}
