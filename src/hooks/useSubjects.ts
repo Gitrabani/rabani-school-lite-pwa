@@ -12,6 +12,11 @@ export const useSubjects = (classId: string) => {
 
   // Fetch subjects for this class
   useEffect(() => {
+    if (!classId) {
+      setSubjects([]);
+      setIsLoading(false);
+      return;
+    }
     const fetchClassSubjects = async () => {
       setIsLoading(true);
       try {
@@ -34,14 +39,14 @@ export const useSubjects = (classId: string) => {
         // If there are subjects, get their details
         if (classSubjectsData.length > 0) {
           const subjectIds = classSubjectsData.map(cs => cs.subject_id);
-          
+
           const formattedSubjects = subjectIds.map(id => ({
             id,
             name: id, // Using the ID as the name since we don't have a subjects table
             teacherId: '', // This can be updated if needed
             classes: [classId]
           }));
-          
+
           setSubjects(formattedSubjects);
         } else {
           setSubjects([]);
@@ -63,6 +68,10 @@ export const useSubjects = (classId: string) => {
 
   // Fetch available subjects (not in this class)
   const fetchAvailableSubjects = async () => {
+    if (!classId) {
+      setAvailableSubjects([]);
+      return;
+    }
     try {
       // Get all subjects from this class
       const { data: classSubjectsData, error: classSubjectsError } = await supabase
@@ -76,13 +85,13 @@ export const useSubjects = (classId: string) => {
       }
 
       const existingSubjectIds = classSubjectsData.map(cs => cs.subject_id);
-      
+
       // For now, we'll use a predefined list of subjects
       const allSubjects = [
         "Mathematics", "English", "Science", "History", "Geography", 
         "Physics", "Chemistry", "Biology", "Computer Science", "Art", "Music"
       ];
-      
+
       // Filter out subjects already in this class
       const availableSubjectsList = allSubjects
         .filter(subject => !existingSubjectIds.includes(subject))
@@ -106,6 +115,7 @@ export const useSubjects = (classId: string) => {
 
   // Add subject to class
   const addSubject = async (subjectId: string) => {
+    if (!classId) return false;
     try {
       // Add subject to class
       const { error } = await supabase
@@ -133,7 +143,7 @@ export const useSubjects = (classId: string) => {
         title: "Success",
         description: "Subject added to class successfully.",
       });
-      
+
       return true;
     } catch (error: any) {
       console.error("Error:", error);
@@ -148,6 +158,7 @@ export const useSubjects = (classId: string) => {
 
   // Remove subject from class
   const removeSubject = async (subjectId: string) => {
+    if (!classId) return false;
     try {
       // Remove subject from class
       const { error } = await supabase
@@ -173,7 +184,7 @@ export const useSubjects = (classId: string) => {
         title: "Success",
         description: "Subject removed from class successfully.",
       });
-      
+
       return true;
     } catch (error: any) {
       console.error("Error:", error);
