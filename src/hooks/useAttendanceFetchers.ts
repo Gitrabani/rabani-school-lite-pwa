@@ -43,7 +43,7 @@ export function useFetchAttendance(selectedClass, selectedDate, setLoading, setA
           .select('*, attendance_records(*)')
           .eq('class_id', selectedClass)
           .eq('date', dateStr)
-          .single();
+          .maybeSingle(); // <-- changed from single() to maybeSingle()
         if (error && error.code !== 'PGRST116') {
           console.error("Error fetching attendance:", error);
           toast({
