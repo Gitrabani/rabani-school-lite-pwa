@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,7 +71,8 @@ export const useGradeOperations = (
           .update({
             marks,
             total_marks: totalMarks,
-            updated_at: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX")
+            updated_at: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
+            finalized: true
           })
           .eq('id', existingGrade.id);
         
@@ -96,7 +96,8 @@ export const useGradeOperations = (
             marks,
             total_marks: totalMarks,
             date: format(new Date(), 'yyyy-MM-dd'),
-            created_by: user.id
+            created_by: user.id,
+            finalized: true,
           });
         
         if (error) {

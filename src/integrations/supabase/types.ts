@@ -201,6 +201,7 @@ export type Database = {
           created_by: string
           date: string
           exam_type: string
+          finalized: boolean
           id: string
           marks: number
           student_id: string
@@ -214,6 +215,7 @@ export type Database = {
           created_by: string
           date: string
           exam_type: string
+          finalized?: boolean
           id?: string
           marks: number
           student_id: string
@@ -227,6 +229,7 @@ export type Database = {
           created_by?: string
           date?: string
           exam_type?: string
+          finalized?: boolean
           id?: string
           marks?: number
           student_id?: string
