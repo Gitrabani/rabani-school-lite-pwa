@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/auth/AuthProvider';
@@ -10,13 +11,13 @@ const Sidebar: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: <Home size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { name: 'Users', path: '/users', icon: <Users size={20} />, roles: ['admin'] },
-    { name: 'Classes', path: '/classes', icon: <BookOpen size={20} />, roles: ['admin', 'teacher'] },
-    { name: 'Attendance', path: '/attendance', icon: <ClipboardCheck size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { name: 'Grades', path: '/grades', icon: <Award size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { name: 'Announcements', path: '/announcements', icon: <MessageSquare size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
-    { name: 'Settings', path: '/settings', icon: <Settings size={20} />, roles: ['admin'] },
+    { name: 'Dashboard', path: '/dashboard', icon: <Home size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
+    { name: 'Users', path: '/dashboard/users', icon: <Users size={20} />, roles: ['admin'] },
+    { name: 'Classes', path: '/dashboard/classes', icon: <BookOpen size={20} />, roles: ['admin', 'teacher'] },
+    { name: 'Attendance', path: '/dashboard/attendance', icon: <ClipboardCheck size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
+    { name: 'Grades', path: '/dashboard/grades', icon: <Award size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
+    { name: 'Announcements', path: '/dashboard/announcements', icon: <MessageSquare size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
+    { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} />, roles: ['admin'] },
   ];
 
   const filteredNavItems = navItems.filter(item => 
@@ -86,3 +87,4 @@ const Sidebar: React.FC = () => {
 };
 
 export default Sidebar;
+
