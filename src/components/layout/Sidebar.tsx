@@ -29,11 +29,11 @@ const Sidebar: React.FC = () => {
       <div className="p-4 flex justify-between items-center border-b">
         {expanded ? (
           <div className="flex items-center space-x-2">
-            <img src="/lovable-uploads/photo-1488590528505-98d2b5aba04b.png" alt="App Logo" className="h-8 w-8 rounded-md object-cover" />
+            <img src="/lovable-uploads/a1d49d84-ab4f-4bf4-8a5a-751b32793f7c.png" alt="App Logo" className="h-8 w-8 rounded-md object-cover" />
             <span className="text-xl font-bold text-gray-900">Rabani SMS</span>
           </div>
         ) : (
-          <img src="/lovable-uploads/photo-1488590528505-98d2b5aba04b.png" alt="App Icon" className="h-8 w-8 rounded-md object-cover" />
+          <img src="/lovable-uploads/a1d49d84-ab4f-4bf4-8a5a-751b32793f7c.png" alt="App Icon" className="h-8 w-8 rounded-md object-cover" />
         )}
         <button 
           onClick={() => setExpanded(!expanded)} 
