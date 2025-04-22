@@ -28,9 +28,12 @@ const Sidebar: React.FC = () => {
     <aside className={`bg-white shadow transition-all duration-300 ${expanded ? 'w-64' : 'w-20'} flex flex-col`}>
       <div className="p-4 flex justify-between items-center border-b">
         {expanded ? (
-          <h2 className="text-xl font-bold text-gray-900">Rabani SMS</h2>
+          <div className="flex items-center space-x-2">
+            <img src="/lovable-uploads/photo-1488590528505-98d2b5aba04b.png" alt="App Logo" className="h-8 w-8 rounded-md object-cover" />
+            <span className="text-xl font-bold text-gray-900">Rabani SMS</span>
+          </div>
         ) : (
-          <span className="text-xl font-bold">RS</span>
+          <img src="/lovable-uploads/photo-1488590528505-98d2b5aba04b.png" alt="App Icon" className="h-8 w-8 rounded-md object-cover" />
         )}
         <button 
           onClick={() => setExpanded(!expanded)} 
@@ -87,4 +90,3 @@ const Sidebar: React.FC = () => {
 };
 
 export default Sidebar;
-
