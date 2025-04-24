@@ -14,6 +14,7 @@ import ClassesPage from "./pages/ClassesPage";
 import AttendancePage from "./pages/AttendancePage";
 import GradesPage from "./pages/GradesPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
+import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
@@ -47,6 +48,7 @@ const App = () => (
                 <Route path="/dashboard/attendance" element={<AttendancePage />} />
                 <Route path="/dashboard/grades" element={<GradesPage />} />
                 <Route path="/dashboard/announcements" element={<AnnouncementsPage />} />
+                <Route path="/dashboard/reports" element={<ReportsPage />} />
                 <Route path="/dashboard/settings" element={<SettingsPage />} />
                 <Route path="/dashboard/profile" element={<ProfilePage />} />
               </Route>

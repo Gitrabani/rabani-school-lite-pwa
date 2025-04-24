@@ -4,7 +4,8 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/auth/AuthProvider';
 import { useSettings } from '../../context/SettingsContext';
 import { 
-  Home, Users, BookOpen, ClipboardCheck, Award, MessageSquare, Settings
+  Home, Users, BookOpen, ClipboardCheck, Award, MessageSquare, Settings,
+  BarChart
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -19,6 +20,7 @@ const Sidebar: React.FC = () => {
     { name: 'Attendance', path: '/dashboard/attendance', icon: <ClipboardCheck size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
     { name: 'Grades', path: '/dashboard/grades', icon: <Award size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
     { name: 'Announcements', path: '/dashboard/announcements', icon: <MessageSquare size={20} />, roles: ['admin', 'teacher', 'student', 'parent'] },
+    { name: 'Reports', path: '/dashboard/reports', icon: <BarChart size={20} />, roles: ['admin', 'teacher'] },
     { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} />, roles: ['admin'] },
   ];
 
