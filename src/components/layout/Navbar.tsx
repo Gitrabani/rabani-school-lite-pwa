@@ -12,6 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -20,15 +27,22 @@ interface NavbarProps {
   setSidebarOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+interface Notification {
+  id: string;
+  message: string;
+  date?: string;
+}
+
 const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { schoolName } = useSettings();
   const { toast } = useToast();
-  const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([
-    { id: '1', message: 'New announcement posted' },
-    { id: '2', message: 'Your attendance has been marked' },
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: '1', message: 'New announcement posted', date: new Date().toISOString() },
+    { id: '2', message: 'Your attendance has been marked', date: new Date(Date.now() - 3600000).toISOString() },
   ]);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(
     () => localStorage.getItem('theme') === 'dark' ||
     (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -59,15 +73,23 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
     }
   };
   
-  const handleNotificationClick = (notificationId: string) => {
-    // Mark notification as read by removing it from the list
-    setNotifications(prev => prev.filter(notification => notification.id !== notificationId));
-    
-    // Show toast to confirm the action
-    toast({
-      title: "Notification read",
-      description: "The notification has been marked as read.",
-    });
+  const handleNotificationClick = (notification: Notification) => {
+    // Open the notification dialog
+    setSelectedNotification(notification);
+  };
+
+  const handleCloseNotification = () => {
+    // When closing, mark as read by removing from the list
+    if (selectedNotification) {
+      setNotifications(prev => prev.filter(note => note.id !== selectedNotification.id));
+      
+      toast({
+        title: "Notification read",
+        description: "The notification has been marked as read.",
+      });
+      
+      setSelectedNotification(null);
+    }
   };
 
   // Initialize theme on component mount
@@ -85,6 +107,14 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
     
     setIsDarkMode(isDark);
   }, []);
+
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "";
+    
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + 
+           ' ' + date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
 
   return (
     <header className="bg-white shadow dark:bg-gray-800 dark:border-gray-700">
@@ -139,9 +169,16 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
                   <DropdownMenuItem 
                     key={notification.id} 
                     className="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={() => handleNotificationClick(notification.id)}
+                    onClick={() => handleNotificationClick(notification)}
                   >
-                    {notification.message}
+                    <div className="w-full">
+                      <div className="text-sm font-medium">{notification.message}</div>
+                      {notification.date && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDate(notification.date)}
+                        </div>
+                      )}
+                    </div>
                   </DropdownMenuItem>
                 ))
               ) : (
@@ -180,6 +217,28 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Notification Dialog */}
+      <Dialog open={!!selectedNotification} onOpenChange={() => selectedNotification && handleCloseNotification()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Notification</DialogTitle>
+            <DialogDescription>
+              {selectedNotification?.date && (
+                <span className="text-xs text-gray-500">
+                  {formatDate(selectedNotification.date)}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4">
+            <p>{selectedNotification?.message}</p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleCloseNotification}>Mark as Read</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };
