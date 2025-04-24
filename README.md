@@ -1,4 +1,5 @@
-# Welcome to your Lovable project
+
+# School Management System
 
 ## Project info
 
