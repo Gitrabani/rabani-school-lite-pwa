@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 interface NavbarProps {
   setSidebarOpen?: React.Dispatch<React.SetStateAction<boolean>>;
@@ -19,7 +20,8 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   const { user, logout } = useAuth();
-  const [notifications] = useState<{ id: string; message: string }[]>([
+  const { toast } = useToast();
+  const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([
     { id: '1', message: 'New announcement posted' },
     { id: '2', message: 'Your attendance has been marked' },
   ]);
@@ -43,6 +45,17 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
+  };
+  
+  const handleNotificationClick = (notificationId: string) => {
+    // Mark notification as read by removing it from the list
+    setNotifications(prev => prev.filter(notification => notification.id !== notificationId));
+    
+    // Show toast to confirm the action
+    toast({
+      title: "Notification read",
+      description: "The notification has been marked as read.",
+    });
   };
 
   // Initialize theme on component mount
@@ -76,7 +89,7 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
               <span className="sr-only">Open menu</span>
             </Button>
           )}
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Rabani School MS</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">School MS</h2>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -106,17 +119,21 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
                 <span className="sr-only">Notifications</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuContent align="end" className="w-64 bg-white dark:bg-gray-800">
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.length > 0 ? (
                 notifications.map((notification) => (
-                  <DropdownMenuItem key={notification.id} className="p-2">
+                  <DropdownMenuItem 
+                    key={notification.id} 
+                    className="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => handleNotificationClick(notification.id)}
+                  >
                     {notification.message}
                   </DropdownMenuItem>
                 ))
               ) : (
-                <DropdownMenuItem disabled>No notifications</DropdownMenuItem>
+                <DropdownMenuItem disabled className="p-2">No notifications</DropdownMenuItem>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -131,7 +148,7 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
                 <span className="sr-only">User menu</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">
