@@ -14,6 +14,7 @@ import AttendancePage from "./pages/AttendancePage";
 import GradesPage from "./pages/GradesPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 import LoadingScreen from "./components/shared/LoadingScreen";
 
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/dashboard/grades" element={<GradesPage />} />
               <Route path="/dashboard/announcements" element={<AnnouncementsPage />} />
               <Route path="/dashboard/settings" element={<SettingsPage />} />
+              <Route path="/dashboard/profile" element={<ProfilePage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

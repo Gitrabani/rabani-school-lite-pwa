@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Menu, Bell, User, Moon, Sun } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   DropdownMenu,
@@ -19,6 +20,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([
@@ -32,6 +34,10 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
 
   const handleLogout = () => {
     logout();
+  };
+
+  const navigateToProfile = () => {
+    navigate('/dashboard/profile');
   };
 
   const toggleDarkMode = () => {
@@ -154,7 +160,7 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
               <DropdownMenuItem className="cursor-pointer">
                 {user?.name} ({user?.role})
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem className="cursor-pointer" onClick={navigateToProfile}>
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer">
