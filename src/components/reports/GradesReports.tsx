@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Card,
@@ -13,6 +12,7 @@ import { Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Tooltip } from 'recharts';
+import { useReportData } from '@/hooks/useReportData';
 
 const gradeDistribution = [
   { grade: "A+", count: 45, percentage: 15 },
@@ -47,6 +47,7 @@ const chartConfig = {
 
 export const GradesReports: React.FC = () => {
   const [examType, setExamType] = useState("midterm");
+  const { gradeDistribution, subjectPerformance, loading } = useReportData();
   
   return (
     <div className="space-y-6">

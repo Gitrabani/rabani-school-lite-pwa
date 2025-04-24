@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Card,
@@ -12,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 import { Download } from 'lucide-react';
+import { useReportData } from '@/hooks/useReportData';
 
 const departmentData = [
   { name: "Faculty", students: 0, teachers: 18, staff: 7 },
@@ -49,6 +49,7 @@ const chartConfig = {
 
 export const DepartmentReports: React.FC = () => {
   const [reportPeriod, setReportPeriod] = useState("current-year");
+  const { departmentData, loading } = useReportData(reportPeriod);
   
   return (
     <div className="space-y-6">

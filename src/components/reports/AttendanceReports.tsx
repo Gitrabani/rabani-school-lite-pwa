@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Card,
@@ -12,6 +11,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Download } from 'lucide-react';
+import { useReportData } from '@/hooks/useReportData';
 
 const attendanceData = [
   { month: "Jan", present: 92, absent: 8, late: 5 },
@@ -54,7 +54,8 @@ const chartConfig = {
 
 export const AttendanceReports: React.FC = () => {
   const [reportClass, setReportClass] = useState("all");
-  
+  const { attendanceData, loading } = useReportData();
+
   const classOptions = [
     { value: "all", label: "All Classes" },
     { value: "class-10", label: "Class 10" },
