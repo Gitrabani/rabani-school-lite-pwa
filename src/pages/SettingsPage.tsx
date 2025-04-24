@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import PageHeader from '../components/shared/PageHeader';
 import {
   Card,
@@ -18,16 +19,30 @@ import { Separator } from '@/components/ui/separator';
 
 const SettingsPage: React.FC = () => {
   const { toast } = useToast();
-  const [schoolName, setSchoolName] = useState('Rabani School');
-  const [academicYear, setAcademicYear] = useState('2025-2026');
+  const { 
+    schoolName, setSchoolName,
+    academicYear, setAcademicYear, 
+    saveSettings 
+  } = useSettings();
+  
   const [sendNotifications, setSendNotifications] = useState(true);
   const [allowParentAccess, setAllowParentAccess] = useState(true);
 
   const handleSaveSettings = () => {
-    toast({
-      title: 'Settings saved',
-      description: 'Your settings have been saved successfully.',
-    });
+    const success = saveSettings();
+    
+    if (success) {
+      toast({
+        title: 'Settings saved',
+        description: 'Your settings have been saved successfully.',
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: 'There was a problem saving your settings.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import MainLayout from "./components/layout/MainLayout";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -30,28 +31,30 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Redirect root to login page */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/dashboard" element={<MainLayout />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="/dashboard/users" element={<UsersPage />} />
-              <Route path="/dashboard/classes" element={<ClassesPage />} />
-              <Route path="/dashboard/attendance" element={<AttendancePage />} />
-              <Route path="/dashboard/grades" element={<GradesPage />} />
-              <Route path="/dashboard/announcements" element={<AnnouncementsPage />} />
-              <Route path="/dashboard/settings" element={<SettingsPage />} />
-              <Route path="/dashboard/profile" element={<ProfilePage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <SettingsProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Redirect root to login page */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/dashboard" element={<MainLayout />}>
+                <Route index element={<DashboardPage />} />
+                <Route path="/dashboard/users" element={<UsersPage />} />
+                <Route path="/dashboard/classes" element={<ClassesPage />} />
+                <Route path="/dashboard/attendance" element={<AttendancePage />} />
+                <Route path="/dashboard/grades" element={<GradesPage />} />
+                <Route path="/dashboard/announcements" element={<AnnouncementsPage />} />
+                <Route path="/dashboard/settings" element={<SettingsPage />} />
+                <Route path="/dashboard/profile" element={<ProfilePage />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </SettingsProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

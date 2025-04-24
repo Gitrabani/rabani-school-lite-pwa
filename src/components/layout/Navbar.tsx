@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Menu, Bell, User, Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { schoolName } = useSettings();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([
     { id: '1', message: 'New announcement posted' },
@@ -38,6 +40,10 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
 
   const navigateToProfile = () => {
     navigate('/dashboard/profile');
+  };
+
+  const navigateToSettings = () => {
+    navigate('/dashboard/settings');
   };
 
   const toggleDarkMode = () => {
@@ -95,7 +101,7 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
               <span className="sr-only">Open menu</span>
             </Button>
           )}
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">School MS</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">{schoolName}</h2>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -163,7 +169,7 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
               <DropdownMenuItem className="cursor-pointer" onClick={navigateToProfile}>
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem className="cursor-pointer" onClick={navigateToSettings}>
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
