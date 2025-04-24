@@ -2,12 +2,14 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/auth/AuthProvider';
+import { useSettings } from '../../context/SettingsContext';
 import { 
   Home, Users, BookOpen, ClipboardCheck, Award, MessageSquare, Settings
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const { user } = useAuth();
+  const { schoolName, academicYear } = useSettings();
   const [expanded, setExpanded] = useState(true);
 
   const navItems = [
@@ -30,7 +32,7 @@ const Sidebar: React.FC = () => {
         {expanded ? (
           <div className="flex items-center space-x-2">
             <img src="/lovable-uploads/a1d49d84-ab4f-4bf4-8a5a-751b32793f7c.png" alt="App Logo" className="h-8 w-8 rounded-md object-cover" />
-            <span className="text-xl font-bold text-gray-900">Rabani SMS</span>
+            <span className="text-xl font-bold text-gray-900">{schoolName}</span>
           </div>
         ) : (
           <img src="/lovable-uploads/a1d49d84-ab4f-4bf4-8a5a-751b32793f7c.png" alt="App Icon" className="h-8 w-8 rounded-md object-cover" />
@@ -76,12 +78,12 @@ const Sidebar: React.FC = () => {
       <div className="p-4 border-t">
         {expanded ? (
           <div className="text-sm text-gray-500">
-            <p className="font-semibold">Rabani School</p>
-            <p>Academic Year 2025-26</p>
+            <p className="font-semibold">{schoolName}</p>
+            <p>Academic Year {academicYear}</p>
           </div>
         ) : (
           <div className="text-center text-sm text-gray-500">
-            <p>2025</p>
+            <p>{academicYear.split('-')[0]}</p>
           </div>
         )}
       </div>
