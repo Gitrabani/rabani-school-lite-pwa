@@ -6,7 +6,7 @@ interface SettingsContextType {
   academicYear: string;
   setSchoolName: (name: string) => void;
   setAcademicYear: (year: string) => void;
-  saveSettings: () => void;
+  saveSettings: () => boolean;
 }
 
 const defaultSettings = {
@@ -42,7 +42,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const saveSettings = () => {
+  const saveSettings = (): boolean => {
     try {
       const settingsToSave = {
         schoolName,
