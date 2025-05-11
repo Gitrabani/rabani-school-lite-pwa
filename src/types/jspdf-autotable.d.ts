@@ -8,6 +8,8 @@ declare module 'jspdf' {
       finalY: number;
     };
     internal: {
+      events: any;
+      scaleFactor: number;
       pageSize: {
         width: number;
         height: number;
@@ -18,6 +20,7 @@ declare module 'jspdf' {
       getNumberOfPages: () => number;
       getFont: () => any;
       getFontSize: () => number;
+      getEncryptor?: (objectId: number) => (data: string) => string;
     };
   }
 }
