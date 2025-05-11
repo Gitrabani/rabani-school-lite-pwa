@@ -28,7 +28,7 @@ export const generateResultPDF = async (
     });
 
     // Check if autoTable is available
-    if (typeof doc.autoTable !== 'function') {
+    if (typeof (doc as any).autoTable !== 'function') {
       console.error('jspdf-autotable is not properly loaded');
       throw new Error('PDF generation failed: autoTable function is not available');
     }
@@ -77,7 +77,7 @@ export const generateResultPDF = async (
       : 0;
 
     // Add grades table
-    doc.autoTable({
+    (doc as any).autoTable({
       startY: 90,
       head: [['Subject', 'Exam Type', 'Marks', 'Total', 'Percentage', 'Grade']],
       body: tableData,
@@ -86,7 +86,7 @@ export const generateResultPDF = async (
     });
 
     // Add summary
-    const finalY = doc.lastAutoTable.finalY + 10;
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
     doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
     doc.text(`Average: ${averagePercentage}%`, 20, finalY + 7);
     doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 14);
