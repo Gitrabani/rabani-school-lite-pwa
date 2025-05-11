@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable'; // This adds autoTable to jsPDF prototype
+import 'jspdf-autotable'; // This imports the plugin to extend jsPDF prototype
 import QRCode from 'qrcode';
 
 interface GradeItem {
@@ -20,6 +20,8 @@ export const generateResultPDF = async (
   academicYear: string
 ) => {
   try {
+    console.log('Starting PDF generation');
+    
     // Create a new PDF document
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -27,11 +29,14 @@ export const generateResultPDF = async (
       format: 'a4',
     });
 
-    // Check if autoTable is available
-    if (typeof (doc as any).autoTable !== 'function') {
+    // Check if jspdf-autotable is properly loaded
+    if (typeof doc.autoTable !== 'function') {
       console.error('jspdf-autotable is not properly loaded');
+      console.log('Available methods:', Object.keys(doc));
       throw new Error('PDF generation failed: autoTable function is not available');
     }
+
+    console.log('autoTable function is available');
 
     // Add school name in header
     doc.setFontSize(20);
@@ -76,8 +81,10 @@ export const generateResultPDF = async (
       ? Math.round((totalMarks / totalPossibleMarks) * 100) 
       : 0;
 
-    // Add grades table
-    (doc as any).autoTable({
+    console.log('Adding table to PDF');
+    
+    // Add grades table - using the correctly imported autoTable function
+    doc.autoTable({
       startY: 90,
       head: [['Subject', 'Exam Type', 'Marks', 'Total', 'Percentage', 'Grade']],
       body: tableData,
@@ -85,8 +92,10 @@ export const generateResultPDF = async (
       headStyles: { fillColor: [41, 128, 185], textColor: 255 },
     });
 
+    console.log('Table added successfully');
+
     // Add summary
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    const finalY = doc.lastAutoTable.finalY + 10;
     doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
     doc.text(`Average: ${averagePercentage}%`, 20, finalY + 7);
     doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 14);
@@ -108,6 +117,7 @@ export const generateResultPDF = async (
       );
     }
 
+    console.log('PDF generation completed successfully');
     return doc;
   } catch (error) {
     console.error('Error generating PDF:', error);

@@ -34,6 +34,7 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
 
     setLoading(true);
     try {
+      console.log("Starting PDF generation process");
       const doc = await generateResultPDF(
         studentName, 
         studentId, 
@@ -53,8 +54,8 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
       console.error("Error generating PDF:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to generate result form",
+        title: "PDF Generation Error",
+        description: error instanceof Error ? error.message : "Failed to generate result form",
       });
     } finally {
       setLoading(false);
