@@ -2,7 +2,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import QRCode from 'qrcode';
-import { useSettings } from '@/context/SettingsContext';
 
 interface GradeItem {
   id: string;
@@ -71,7 +70,7 @@ export const generateResultPDF = async (
     : 0;
 
   // Add grades table
-  (doc as any).autoTable({
+  doc.autoTable({
     startY: 90,
     head: [['Subject', 'Exam Type', 'Marks', 'Total', 'Percentage', 'Grade']],
     body: tableData,
@@ -80,7 +79,7 @@ export const generateResultPDF = async (
   });
 
   // Add summary
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  const finalY = doc.lastAutoTable.finalY + 10;
   doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
   doc.text(`Average: ${averagePercentage}%`, 20, finalY + 7);
   doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 14);
