@@ -1,6 +1,6 @@
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import 'jspdf-autotable'; // This adds autoTable to jsPDF prototype
 import QRCode from 'qrcode';
 
 interface GradeItem {
@@ -19,89 +19,100 @@ export const generateResultPDF = async (
   schoolName: string,
   academicYear: string
 ) => {
-  // Create a new PDF document
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4',
-  });
+  try {
+    // Create a new PDF document
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
 
-  // Add school name in header
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text(schoolName, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+    // Check if autoTable is available
+    if (typeof doc.autoTable !== 'function') {
+      console.error('jspdf-autotable is not properly loaded');
+      throw new Error('PDF generation failed: autoTable function is not available');
+    }
 
-  // Add academic year
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Academic Year: ${academicYear}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+    // Add school name in header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text(schoolName, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
 
-  // Add title
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Student Result Form', doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+    // Add academic year
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Academic Year: ${academicYear}`, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
 
-  // Add student info
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Student Name: ${studentName}`, 20, 45);
-  doc.text(`Student ID: ${studentId}`, 20, 52);
-  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 59);
+    // Add title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Student Result Form', doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
 
-  // Generate QR code with school name
-  const qrCodeDataURL = await QRCode.toDataURL(schoolName);
-  doc.addImage(qrCodeDataURL, 'PNG', 140, 40, 40, 40);
+    // Add student info
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Student Name: ${studentName}`, 20, 45);
+    doc.text(`Student ID: ${studentId}`, 20, 52);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 59);
 
-  // Prepare grades data for table
-  const tableData = grades.map((grade) => [
-    grade.subject_id,
-    grade.exam_type,
-    grade.marks,
-    grade.total_marks,
-    `${Math.round((grade.marks / grade.total_marks) * 100)}%`,
-    getGradeLetter(Math.round((grade.marks / grade.total_marks) * 100)),
-  ]);
+    // Generate QR code with school name
+    const qrCodeDataURL = await QRCode.toDataURL(schoolName);
+    doc.addImage(qrCodeDataURL, 'PNG', 140, 40, 40, 40);
 
-  // Calculate summary
-  const totalMarks = grades.reduce((sum, grade) => sum + grade.marks, 0);
-  const totalPossibleMarks = grades.reduce((sum, grade) => sum + grade.total_marks, 0);
-  const averagePercentage = totalPossibleMarks > 0 
-    ? Math.round((totalMarks / totalPossibleMarks) * 100) 
-    : 0;
+    // Prepare grades data for table
+    const tableData = grades.map((grade) => [
+      grade.subject_id,
+      grade.exam_type,
+      grade.marks,
+      grade.total_marks,
+      `${Math.round((grade.marks / grade.total_marks) * 100)}%`,
+      getGradeLetter(Math.round((grade.marks / grade.total_marks) * 100)),
+    ]);
 
-  // Add grades table
-  doc.autoTable({
-    startY: 90,
-    head: [['Subject', 'Exam Type', 'Marks', 'Total', 'Percentage', 'Grade']],
-    body: tableData,
-    theme: 'grid',
-    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-  });
+    // Calculate summary
+    const totalMarks = grades.reduce((sum, grade) => sum + grade.marks, 0);
+    const totalPossibleMarks = grades.reduce((sum, grade) => sum + grade.total_marks, 0);
+    const averagePercentage = totalPossibleMarks > 0 
+      ? Math.round((totalMarks / totalPossibleMarks) * 100) 
+      : 0;
 
-  // Add summary
-  const finalY = doc.lastAutoTable.finalY + 10;
-  doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
-  doc.text(`Average: ${averagePercentage}%`, 20, finalY + 7);
-  doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 14);
-  
-  // Add remarks
-  doc.text('Remarks:', 20, finalY + 28);
-  doc.text(getRemarks(averagePercentage), 20, finalY + 35);
+    // Add grades table
+    doc.autoTable({
+      startY: 90,
+      head: [['Subject', 'Exam Type', 'Marks', 'Total', 'Percentage', 'Grade']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    });
 
-  // Add footer with school name
-  const pageCount = doc.internal.getNumberOfPages();
-  doc.setFontSize(10);
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.text(
-      schoolName,
-      doc.internal.pageSize.getWidth() / 2,
-      doc.internal.pageSize.getHeight() - 10,
-      { align: 'center' }
-    );
+    // Add summary
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
+    doc.text(`Average: ${averagePercentage}%`, 20, finalY + 7);
+    doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 14);
+    
+    // Add remarks
+    doc.text('Remarks:', 20, finalY + 28);
+    doc.text(getRemarks(averagePercentage), 20, finalY + 35);
+
+    // Add footer with school name
+    const pageCount = doc.internal.getNumberOfPages();
+    doc.setFontSize(10);
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.text(
+        schoolName,
+        doc.internal.pageSize.getWidth() / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+
+    return doc;
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    throw error;
   }
-
-  return doc;
 };
 
 // Helper function to determine grade letter
