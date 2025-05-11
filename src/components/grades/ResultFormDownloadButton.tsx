@@ -35,6 +35,14 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
     setLoading(true);
     try {
       console.log("Starting PDF generation process");
+      console.log("Student data:", { studentName, studentId, gradesCount: grades.length });
+      
+      // Check if jspdf-autotable is available in the global scope
+      if (typeof window !== 'undefined') {
+        console.log("Checking for jspdf-autotable in window scope...");
+        // Just for debugging
+      }
+      
       const doc = await generateResultPDF(
         studentName, 
         studentId, 

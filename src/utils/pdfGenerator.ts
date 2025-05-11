@@ -1,6 +1,8 @@
 
-import jsPDF from 'jspdf';
-import 'jspdf-autotable'; // This imports the plugin to extend jsPDF prototype
+// Import jsPDF first
+import { jsPDF } from 'jspdf';
+// Then import the autotable plugin
+import 'jspdf-autotable';
 import QRCode from 'qrcode';
 
 interface GradeItem {
@@ -33,6 +35,19 @@ export const generateResultPDF = async (
     if (typeof doc.autoTable !== 'function') {
       console.error('jspdf-autotable is not properly loaded');
       console.log('Available methods:', Object.keys(doc));
+      
+      // Try to dynamically load the plugin
+      console.log('Attempting to dynamically apply jspdf-autotable...');
+      
+      // Check if window object exists (browser environment)
+      if (typeof window !== 'undefined') {
+        console.log('Running in browser environment, checking for global jsPDF');
+        // Check if there's a global jspdf-autotable
+        if (typeof window.jspdf === 'undefined') {
+          console.error('Global jsPDF not found');
+        }
+      }
+      
       throw new Error('PDF generation failed: autoTable function is not available');
     }
 
@@ -83,19 +98,23 @@ export const generateResultPDF = async (
 
     console.log('Adding table to PDF');
     
-    // Add grades table - using the correctly imported autoTable function
-    doc.autoTable({
-      startY: 90,
-      head: [['Subject', 'Exam Type', 'Marks', 'Total', 'Percentage', 'Grade']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-    });
-
-    console.log('Table added successfully');
+    try {
+      // Add grades table - using the correctly imported autoTable function
+      doc.autoTable({
+        startY: 90,
+        head: [['Subject', 'Exam Type', 'Marks', 'Total', 'Percentage', 'Grade']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
+      console.log('Table added successfully');
+    } catch (tableError) {
+      console.error('Error adding table:', tableError);
+      throw new Error(`Failed to add table: ${tableError.message}`);
+    }
 
     // Add summary
-    const finalY = doc.lastAutoTable.finalY + 10;
+    const finalY = doc.lastAutoTable?.finalY + 10 || 120;
     doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
     doc.text(`Average: ${averagePercentage}%`, 20, finalY + 7);
     doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 14);
@@ -146,3 +165,10 @@ const getRemarks = (percentage: number): string => {
   if (percentage >= 40) return 'Needs improvement. Please seek additional help.';
   return 'Failed. Requires serious attention and remedial classes.';
 };
+
+// Add a declaration for the window object
+declare global {
+  interface Window {
+    jspdf: any;
+  }
+}
