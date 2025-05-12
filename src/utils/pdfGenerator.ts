@@ -1,6 +1,7 @@
 
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+// Import jspdf-autotable properly
 import 'jspdf-autotable';
 
 // Import required types
@@ -21,6 +22,27 @@ const getGradeLetter = (percentage: number): string => {
   return 'F';
 };
 
+// Function to manually add autoTable functionality if it's not available
+const ensureAutoTableFunctionality = (doc: jsPDF) => {
+  console.log("Checking if autoTable exists:", typeof (doc as any).autoTable === 'function');
+  
+  if (typeof (doc as any).autoTable !== 'function') {
+    console.warn('autoTable function not found, trying to import jspdf-autotable manually');
+    
+    // Try to dynamically import
+    try {
+      // A last resort attempt to manually attach the function if it's somehow available in window
+      if (window && (window as any).jspdfAutoTable) {
+        (window as any).jspdfAutoTable(doc);
+        console.log("Applied jspdfAutoTable from window object");
+      }
+    } catch (error) {
+      console.error("Failed to manually import jspdf-autotable:", error);
+      throw new Error("PDF generation failed: autoTable function is not available even after manual import attempt");
+    }
+  }
+};
+
 export const generateResultPDF = async (
   studentName: string,
   studentId: string,
@@ -29,7 +51,7 @@ export const generateResultPDF = async (
   academicYear: string
 ) => {
   try {
-    console.log('Starting PDF generation');
+    console.log('Starting PDF generation with schoolName:', schoolName);
 
     // Create a new PDF document
     const doc = new jsPDF({
@@ -38,13 +60,12 @@ export const generateResultPDF = async (
       format: 'a4',
     });
 
-    // Check if autoTable is available
-    if (typeof doc.autoTable !== 'function') {
-      console.error('autoTable function is not available on the jsPDF instance');
-      console.log('Available methods:', Object.keys(doc));
-      throw new Error('PDF generation failed: autoTable function is not available');
-    }
-
+    // Log available methods to help debug
+    console.log("Available methods:", Object.keys(doc));
+    
+    // Ensure autoTable is available
+    ensureAutoTableFunctionality(doc);
+    
     // Add school name in header
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
@@ -78,7 +99,7 @@ export const generateResultPDF = async (
       ? Math.round((totalMarks / totalPossibleMarks) * 100)
       : 0;
 
-    console.log('Adding table to PDF');
+    console.log('Creating table data for PDF');
 
     // Create table data
     const tableData = grades.map(grade => [
@@ -90,25 +111,46 @@ export const generateResultPDF = async (
       getGradeLetter(Math.round((grade.marks / grade.total_marks) * 100))
     ]);
 
-    // Use autoTable to create grade table
-    doc.autoTable({
-      startY: 90,
-      head: [['Subject', 'Exam Type', 'Marks', 'Total Marks', 'Percentage', 'Grade']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      margin: { top: 90 }
-    });
+    // Use a try-catch block specifically for the autoTable call
+    try {
+      console.log("Attempting to use autoTable");
+      // Use type assertion to access autoTable
+      (doc as any).autoTable({
+        startY: 90,
+        head: [['Subject', 'Exam Type', 'Marks', 'Total Marks', 'Percentage', 'Grade']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        margin: { top: 90 }
+      });
+      console.log("autoTable was called successfully");
+    } catch (error) {
+      console.error("Error calling autoTable:", error);
+      throw new Error(`Failed to create table: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    // Get the final Y position after the table
+    let finalY = 90 + tableData.length * 10 + 30; // Estimate if lastAutoTable is not available
+    
+    try {
+      if ((doc as any).lastAutoTable && typeof (doc as any).lastAutoTable.finalY !== 'undefined') {
+        finalY = (doc as any).lastAutoTable.finalY + 10;
+        console.log("Got finalY position from lastAutoTable:", finalY);
+      }
+    } catch (error) {
+      console.warn("Could not access lastAutoTable.finalY:", error);
+    }
 
     // Add summary after the table
-    let finalY = doc.lastAutoTable.finalY + 10;
     doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
     doc.text(`Average: ${averagePercentage}%`, 20, finalY + 10);
     doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 20);
 
     // Add footer with school name
-    // Use a safer approach to access internal methods
-    const pageCount = doc.internal.pages ? doc.internal.pages.length - 1 : 1;
+    const pageCount = (doc as any).internal.getNumberOfPages 
+      ? (doc as any).internal.getNumberOfPages() 
+      : 1;
+      
     doc.setFontSize(10);
     
     for (let i = 1; i <= pageCount; i++) {

@@ -37,10 +37,16 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
     try {
       console.log("Starting PDF generation process");
       console.log("Student data:", { studentName, studentId, gradesCount: grades.length });
+      console.log("School settings:", { schoolName, academicYear });
       
-      // Verify jspdf-autotable is loaded
-      if (typeof window !== 'undefined') {
-        console.log("Environment check: running in browser");
+      // Check if we're in a browser environment
+      if (typeof window === 'undefined') {
+        throw new Error("PDF generation is only available in browser environments");
+      }
+      
+      // Verify if jspdf-autotable is loaded by checking window object
+      if (!(window as any).jspdf) {
+        console.warn("jsPDF not found in window object, proceeding anyway");
       }
       
       const doc = await generateResultPDF(
@@ -51,8 +57,15 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
         academicYear || 'Current Academic Year'
       );
 
-      // Save PDF with student name in filename
-      doc.save(`${studentName.replace(/\s+/g, "-")}-result-form.pdf`);
+      // Verify document was created
+      if (!doc) {
+        throw new Error("Failed to generate PDF document");
+      }
+
+      // Try to save the PDF with student name in filename
+      const filename = `${studentName.replace(/\s+/g, "-")}-result-form.pdf`;
+      console.log("Attempting to save PDF as:", filename);
+      doc.save(filename);
 
       toast({
         title: "Success",
@@ -60,10 +73,17 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
+      
+      // Provide more detailed error message
+      let errorMessage = "Failed to generate result form";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         variant: "destructive",
         title: "PDF Generation Error",
-        description: error instanceof Error ? error.message : "Failed to generate result form",
+        description: errorMessage,
       });
     } finally {
       setLoading(false);

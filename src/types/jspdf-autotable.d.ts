@@ -1,5 +1,5 @@
 
-import 'jspdf';
+import { jsPDF } from 'jspdf';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -23,4 +23,9 @@ declare module 'jspdf' {
       getEncryptor?: (objectId: number) => (data: string) => string;
     };
   }
+}
+
+// Augment the global window object
+interface Window {
+  jspdfAutoTable?: (doc: jsPDF) => void;
 }
