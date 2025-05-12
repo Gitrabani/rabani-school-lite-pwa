@@ -17,6 +17,8 @@ const GradesPage: React.FC = () => {
         return <TeacherGradeView />;
       case 'parent':
         return <ParentGradeView />;
+      case 'admin':
+        return <StudentGradeView />;
       default:
         return <StudentGradeView />;
     }
@@ -29,6 +31,7 @@ const GradesPage: React.FC = () => {
         description={
           user?.role === 'teacher' ? "Manage student grades" : 
           user?.role === 'parent' ? "View your children's grades" :
+          user?.role === 'admin' ? "View all grade records" :
           "View grade records"
         }
       />
