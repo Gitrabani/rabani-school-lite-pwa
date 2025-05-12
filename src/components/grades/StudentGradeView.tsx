@@ -7,6 +7,7 @@ import { useOwnGrades } from '@/hooks/useOwnGrades';
 import { useReportCardStatus } from '@/hooks/useReportCardStatus';
 import { useAuth } from '../../context/auth/AuthProvider';
 import DownloadReportCardButton from './DownloadReportCardButton';
+import ResultFormDownloadButton from './ResultFormDownloadButton';
 import { Separator } from '@/components/ui/separator';
 
 const StudentGradeView: React.FC = () => {
@@ -44,12 +45,21 @@ const StudentGradeView: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h3 className="text-lg font-medium">Download Options</h3>
-            <p className="text-sm text-muted-foreground">Download your grade reports</p>
+            <p className="text-sm text-muted-foreground">Download your grade reports and result forms</p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             {user?.id && (
-              <DownloadReportCardButton studentId={user.id} enabled={reportReady} />
+              <>
+                <ResultFormDownloadButton 
+                  studentName={user.name} 
+                  studentId={user.id} 
+                  grades={ownGrades}
+                  disabled={loading || ownGrades.length === 0}
+                />
+                
+                <DownloadReportCardButton studentId={user.id} enabled={reportReady} />
+              </>
             )}
           </div>
         </div>
