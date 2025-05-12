@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -160,17 +159,6 @@ const ParentGradeView: React.FC = () => {
                 ))}
               </SelectContent>
             </Select>
-            
-            {selectedChild && (
-              <div className="flex justify-end">
-                <ResultFormDownloadButton
-                  studentName={selectedChildName}
-                  studentId={selectedChild}
-                  grades={childGrades}
-                  disabled={loading || childGrades.length === 0}
-                />
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
