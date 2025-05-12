@@ -6,10 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/auth/AuthProvider';
 import { Skeleton } from '@/components/ui/skeleton';
 import StudentGradesBySubject from './StudentGradesBySubject';
-import ResultFormDownloadButton from './ResultFormDownloadButton';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import StudentGradesByExam from './StudentGradesByExam';
+import DownloadReportCardButton from './DownloadReportCardButton';
 
 interface ChildInfo {
   id: string;
@@ -25,6 +25,7 @@ const ParentGradeView: React.FC = () => {
   const [childGrades, setChildGrades] = useState<any[]>([]);
   const [gradesBySubject, setGradesBySubject] = useState<Record<string, any[]>>({});
   const [subjects, setSubjects] = useState<Record<string, string>>({});
+  const [reportReady, setReportReady] = useState(false);
 
   // Fetch parent's children
   useEffect(() => {
@@ -115,6 +116,33 @@ const ParentGradeView: React.FC = () => {
     fetchChildGrades();
   }, [selectedChild, toast]);
 
+  // Check if report is ready for selected child
+  useEffect(() => {
+    const checkReportStatus = async () => {
+      if (!selectedChild) {
+        setReportReady(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('grades')
+          .select('finalized')
+          .eq('student_id', selectedChild);
+        
+        if (error) throw error;
+        
+        // Report is ready if all grades are finalized
+        setReportReady(data && data.length > 0 && data.every(g => g.finalized));
+      } catch (error) {
+        console.error('Error checking report status:', error);
+        setReportReady(false);
+      }
+    };
+    
+    checkReportStatus();
+  }, [selectedChild, childGrades]);
+
   const selectedChildName = children.find(c => c.id === selectedChild)?.name || '';
 
   if (loading && children.length === 0) {
@@ -163,11 +191,9 @@ const ParentGradeView: React.FC = () => {
             
             {selectedChild && (
               <div className="flex justify-end">
-                <ResultFormDownloadButton
-                  studentName={selectedChildName}
-                  studentId={selectedChild}
-                  grades={childGrades}
-                  disabled={loading || childGrades.length === 0}
+                <DownloadReportCardButton 
+                  studentId={selectedChild} 
+                  enabled={reportReady} 
                 />
               </div>
             )}
