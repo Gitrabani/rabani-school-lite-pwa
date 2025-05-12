@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
 import { generateResultPDF } from "@/utils/pdfGenerator";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/context/SettingsContext";
 
 interface ResultFormDownloadButtonProps {
@@ -20,6 +20,7 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
   disabled = false,
 }) => {
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const { schoolName, academicYear } = useSettings();
 
   const handleDownload = async () => {
@@ -37,18 +38,17 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = ({
       console.log("Starting PDF generation process");
       console.log("Student data:", { studentName, studentId, gradesCount: grades.length });
       
-      // Check if jspdf-autotable is available in the global scope
+      // Verify jspdf-autotable is loaded
       if (typeof window !== 'undefined') {
-        console.log("Checking for jspdf-autotable in window scope...");
-        // Just for debugging
+        console.log("Environment check: running in browser");
       }
       
       const doc = await generateResultPDF(
         studentName, 
         studentId, 
         grades,
-        schoolName,
-        academicYear
+        schoolName || 'School Name Not Set',
+        academicYear || 'Current Academic Year'
       );
 
       // Save PDF with student name in filename

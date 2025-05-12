@@ -1,3 +1,26 @@
+
+import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
+import 'jspdf-autotable';
+
+// Import required types
+type GradeItem = {
+  subject_id: string;
+  exam_type: string;
+  marks: number;
+  total_marks: number;
+};
+
+// Helper function to get grade letter
+const getGradeLetter = (percentage: number): string => {
+  if (percentage >= 90) return 'A+';
+  if (percentage >= 80) return 'A';
+  if (percentage >= 70) return 'B';
+  if (percentage >= 60) return 'C';
+  if (percentage >= 50) return 'D';
+  return 'F';
+};
+
 export const generateResultPDF = async (
   studentName: string,
   studentId: string,
@@ -14,6 +37,13 @@ export const generateResultPDF = async (
       unit: 'mm',
       format: 'a4',
     });
+
+    // Check if autoTable is available
+    if (typeof doc.autoTable !== 'function') {
+      console.error('autoTable function is not available on the jsPDF instance');
+      console.log('Available methods:', Object.keys(doc));
+      throw new Error('PDF generation failed: autoTable function is not available');
+    }
 
     // Add school name in header
     doc.setFontSize(20);
@@ -50,37 +80,37 @@ export const generateResultPDF = async (
 
     console.log('Adding table to PDF');
 
-    // Header for the table
-    let startY = 90;
-    doc.setFontSize(10);
-    doc.text('Subject', 20, startY);
-    doc.text('Exam Type', 60, startY);
-    doc.text('Marks', 100, startY);
-    doc.text('Total Marks', 120, startY);
-    doc.text('Percentage', 140, startY);
-    doc.text('Grade', 160, startY);
-    doc.line(20, startY + 2, 190, startY + 2); // Add line below the header
+    // Create table data
+    const tableData = grades.map(grade => [
+      grade.subject_id,
+      grade.exam_type,
+      grade.marks.toString(),
+      grade.total_marks.toString(),
+      `${Math.round((grade.marks / grade.total_marks) * 100)}%`,
+      getGradeLetter(Math.round((grade.marks / grade.total_marks) * 100))
+    ]);
 
-    // Add rows for grades
-    grades.forEach((grade, index) => {
-      startY += 10;
-      doc.text(grade.subject_id, 20, startY);
-      doc.text(grade.exam_type, 60, startY);
-      doc.text(grade.marks.toString(), 100, startY);
-      doc.text(grade.total_marks.toString(), 120, startY);
-      doc.text(`${Math.round((grade.marks / grade.total_marks) * 100)}%`, 140, startY);
-      doc.text(getGradeLetter(Math.round((grade.marks / grade.total_marks) * 100)), 160, startY);
+    // Use autoTable to create grade table
+    doc.autoTable({
+      startY: 90,
+      head: [['Subject', 'Exam Type', 'Marks', 'Total Marks', 'Percentage', 'Grade']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      margin: { top: 90 }
     });
 
-    // Add summary
-    startY += 20;
-    doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, startY);
-    doc.text(`Average: ${averagePercentage}%`, 20, startY + 10);
-    doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, startY + 20);
+    // Add summary after the table
+    let finalY = doc.lastAutoTable.finalY + 10;
+    doc.text(`Total Marks: ${totalMarks} / ${totalPossibleMarks}`, 20, finalY);
+    doc.text(`Average: ${averagePercentage}%`, 20, finalY + 10);
+    doc.text(`Overall Grade: ${getGradeLetter(averagePercentage)}`, 20, finalY + 20);
 
     // Add footer with school name
-    const pageCount = doc.internal.getNumberOfPages();
+    // Use a safer approach to access internal methods
+    const pageCount = doc.internal.pages ? doc.internal.pages.length - 1 : 1;
     doc.setFontSize(10);
+    
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.text(
