@@ -26,9 +26,9 @@ const StudentGradesBySubject: React.FC<StudentGradesBySubjectProps> = ({ gradesB
       ) : (
         <div className="grid gap-6">
           {Object.entries(gradesBySubject).map(([subjectName, grades]) => (
-            <Card key={subjectName}>
-              <CardHeader>
-                <CardTitle>{subjectName}</CardTitle>
+            <Card key={subjectName} className="bg-card dark:bg-navy-900">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl">{subjectName}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>

@@ -1,45 +1,42 @@
-
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../../integrations/supabase/client';
 import { AppUser, UserRole } from './types';
 import { toast } from '../../hooks/use-toast';
 
-export async function getUserProfileFromSession(session: Session | null): Promise<AppUser | null> {
-  if (!session?.user) return null;
-  
+export const getUserProfileFromSession = async (session: Session | null) => {
+  if (!session) return null;
+
   try {
-    // Get user profile data
-    const { data: profileData, error: profileError } = await supabase
+    // Get user profile from profiles table
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
       .single();
-
-    if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+    
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+    
+    if (!profile) {
+      console.error('No profile found for user');
       return null;
     }
 
-    if (!profileData) {
-      console.error('No profile data found');
-      return null;
-    }
-
-    // Create AppUser object from auth user and profile data
-    const appUser: AppUser = {
+    // Return AppUser object
+    return {
       id: session.user.id,
-      name: profileData.full_name || '',
-      email: session.user.email!,
-      role: profileData.role as UserRole || 'student',
-      profileImage: profileData.avatar_url || undefined
+      name: profile.full_name || session.user.email?.split('@')[0] || 'User',
+      email: session.user.email || '',
+      role: profile.role as UserRole,
+      profileImage: profile.avatar_url || undefined
     };
-
-    return appUser;
   } catch (error) {
-    console.error('Error processing user session:', error);
+    console.error('Error in getUserProfileFromSession:', error);
     return null;
   }
-}
+};
 
 export async function handleSignup(
   email: string, 

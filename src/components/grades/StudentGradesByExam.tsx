@@ -33,7 +33,7 @@ const StudentGradesByExam: React.FC<StudentGradesByExamProps> = ({
   const totalsByExam = getTotalsByExamType(ownGrades);
 
   return (
-    <Card>
+    <Card className="bg-card dark:bg-navy-900">
       <CardHeader>
         <CardTitle>All Exam Results</CardTitle>
       </CardHeader>
@@ -131,4 +131,3 @@ const StudentGradesByExam: React.FC<StudentGradesByExamProps> = ({
 };
 
 export default StudentGradesByExam;
-

@@ -5,6 +5,7 @@ import PageHeader from '../components/shared/PageHeader';
 import StudentGradeView from '@/components/grades/StudentGradeView';
 import TeacherGradeView from '@/components/grades/TeacherGradeView';
 import ParentGradeView from '@/components/grades/ParentGradeView';
+import { Card, CardContent } from '@/components/ui/card';
 
 const GradesPage: React.FC = () => {
   const { user } = useAuth();
@@ -18,9 +19,16 @@ const GradesPage: React.FC = () => {
       case 'parent':
         return <ParentGradeView />;
       case 'admin':
+        // Admin now sees the same view as students
         return <StudentGradeView />;
       default:
-        return <StudentGradeView />;
+        return (
+          <Card>
+            <CardContent className="py-10 text-center">
+              <p className="text-muted-foreground">Please log in to view grades</p>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
