@@ -52,7 +52,7 @@ export const useOwnGrades = (studentId?: string) => {
           return;
         }
         
-        if (gradesData.length > 0) {
+        if (gradesData && gradesData.length > 0) {
           const subjectIds: Record<string, string> = {};
           const studentClassIds = new Set<string>();
           

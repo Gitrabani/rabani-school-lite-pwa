@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth/AuthProvider';
 import StudentGradeTable from './StudentGradeTable';
 import GradeSelectionForm from './GradeSelectionForm';
 import { useTeacherGradeData } from '@/hooks/useTeacherGradeData';

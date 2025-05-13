@@ -10,18 +10,25 @@ import { Card, CardContent } from '@/components/ui/card';
 const GradesPage: React.FC = () => {
   const { user } = useAuth();
 
+  console.log('Current user in GradesPage:', user);
+
   const renderGradeView = () => {
     switch (user?.role) {
       case 'student':
+        console.log('Rendering StudentGradeView for student');
         return <StudentGradeView />;
       case 'teacher':
+        console.log('Rendering TeacherGradeView for teacher');
         return <TeacherGradeView />;
       case 'parent':
+        console.log('Rendering ParentGradeView for parent');
         return <ParentGradeView />;
       case 'admin':
         // Admin now sees the same view as students
+        console.log('Rendering StudentGradeView for admin');
         return <StudentGradeView />;
       default:
+        console.log('No user or unrecognized role, showing login prompt');
         return (
           <Card>
             <CardContent className="py-10 text-center">
