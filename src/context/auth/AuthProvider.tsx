@@ -49,7 +49,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     password: string, 
     userData: { fullName: string; role: UserRole }
   ): Promise<boolean> => {
-    return handleSignup(email, password, userData);
+    return handleSignup(email, password, userData.fullName, userData.role);
   };
 
   const logout = async () => {

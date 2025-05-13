@@ -53,12 +53,12 @@ export const useOwnGrades = (studentId?: string) => {
         }
         
         if (gradesData.length > 0) {
-          const subjects: Record<string, string> = {};
+          const subjectIds: Record<string, string> = {};
           const studentClassIds = new Set<string>();
           
           // Fetch subject data for the grades
           for (const grade of gradesData) {
-            subjects[grade.subject_id] = grade.subject_id;
+            subjectIds[grade.subject_id] = grade.subject_id;
             studentClassIds.add(grade.class_id);
           }
           
@@ -67,27 +67,30 @@ export const useOwnGrades = (studentId?: string) => {
             setClassId(Array.from(studentClassIds)[0]);
           }
           
-          // Get subject names
-          if (Object.keys(subjects).length > 0) {
-            const { data: subjectsData, error: subjectsError } = await supabase
-              .from('subjects')
-              .select('id, name')
-              .in('id', Object.keys(subjects));
+          // Since 'subjects' table doesn't exist in Supabase schema, we'll use a hardcoded mapping
+          // or fetch subject data from another source in a real application
+          // For now, we'll just use the subject IDs as names
+          const subjectMap: Record<string, string> = {};
+          
+          // We would normally fetch from a subjects table, but since it doesn't exist,
+          // we'll implement a workaround by using subject IDs as names
+          Object.keys(subjectIds).forEach(subjectId => {
+            // Format the subject ID to look like a name (e.g., "math_101" -> "Math 101")
+            const formattedName = subjectId
+              .split('_')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
             
-            if (!subjectsError && subjectsData) {
-              const subjectMap: Record<string, string> = {};
-              subjectsData.forEach(subject => {
-                subjectMap[subject.id] = subject.name;
-              });
-              setSubjects(subjectMap);
-            }
-          }
+            subjectMap[subjectId] = formattedName;
+          });
+          
+          setSubjects(subjectMap);
           
           // Group grades by subject
           const groupedGrades: Record<string, any[]> = {};
           
           gradesData.forEach(grade => {
-            const subjectName = subjects[grade.subject_id] || grade.subject_id;
+            const subjectName = subjectMap[grade.subject_id] || grade.subject_id;
             if (!groupedGrades[subjectName]) {
               groupedGrades[subjectName] = [];
             }
