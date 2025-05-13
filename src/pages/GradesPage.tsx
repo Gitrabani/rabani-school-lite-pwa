@@ -24,7 +24,7 @@ const GradesPage: React.FC = () => {
         console.log('Rendering ParentGradeView for parent');
         return <ParentGradeView />;
       case 'admin':
-        // Admin now sees the same view as students
+        // Admin will now see the same view as students with full data
         console.log('Rendering StudentGradeView for admin');
         return <StudentGradeView />;
       default:

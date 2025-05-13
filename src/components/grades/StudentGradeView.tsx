@@ -38,28 +38,30 @@ const StudentGradeView: React.FC = () => {
         </TabsContent>
       </Tabs>
       
-      <div className="mt-8 space-y-4">
-        <Separator />
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h3 className="text-lg font-medium">Download Options</h3>
-            <p className="text-sm text-muted-foreground">Download your grade reports</p>
+      {user?.role !== 'admin' && (
+        <div className="mt-8 space-y-4">
+          <Separator />
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h3 className="text-lg font-medium">Download Options</h3>
+              <p className="text-sm text-muted-foreground">Download your grade reports</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              {user?.id && (
+                <DownloadReportCardButton studentId={user.id} enabled={reportReady} />
+              )}
+            </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-3">
-            {user?.id && (
-              <DownloadReportCardButton studentId={user.id} enabled={reportReady} />
-            )}
-          </div>
+          {!reportReady && (
+            <div className="text-xs text-muted-foreground">
+              The report card will be available once your teacher finalizes all grades.
+            </div>
+          )}
         </div>
-        
-        {!reportReady && (
-          <div className="text-xs text-muted-foreground">
-            The report card will be available once your teacher finalizes all grades.
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

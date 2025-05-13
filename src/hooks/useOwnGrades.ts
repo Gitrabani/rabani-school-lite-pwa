@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,20 +22,25 @@ export const useOwnGrades = (studentId?: string) => {
       try {
         setLoading(true);
         
-        // Use the studentId parameter if provided (for admin/parent view), otherwise use current user's id
-        const effectiveStudentId = studentId || user.id;
+        // For admin, fetch sample of grades if no specific studentId is provided
+        // For students, fetch their own grades
+        // For parent/teachers viewing a specific student, use the provided studentId
+        let gradesQuery = supabase.from('grades').select('*');
         
-        // For admin, we need to fetch either all grades or grades for a specific student
-        let gradesQuery = supabase
-          .from('grades')
-          .select('*');
-        
-        // If it's an admin without specific student ID, fetch sample of grades (could be modified to fetch all)
-        if (user.role === 'admin' && !studentId) {
-          gradesQuery = gradesQuery.limit(100); // Just get a reasonable amount for admin overview
-        } else {
-          // For students, parents viewing their child, or admin viewing specific student
-          gradesQuery = gradesQuery.eq('student_id', effectiveStudentId);
+        // If we have a specific student ID, use it (for admin viewing specific student or parent view)
+        if (studentId) {
+          console.log(`Fetching grades for specific student: ${studentId}`);
+          gradesQuery = gradesQuery.eq('student_id', studentId);
+        } 
+        // Otherwise, for students, use their own ID, for admin fetch all (with limit)
+        else {
+          if (user.role === 'admin') {
+            console.log("Admin fetching sample grade data");
+            gradesQuery = gradesQuery.limit(100); // Get a representative sample
+          } else {
+            console.log(`User ${user.id} fetching their own grades`);
+            gradesQuery = gradesQuery.eq('student_id', user.id);
+          }
         }
         
         const { data: gradesData, error: gradesError } = await gradesQuery;
@@ -53,6 +57,7 @@ export const useOwnGrades = (studentId?: string) => {
         }
         
         if (gradesData && gradesData.length > 0) {
+          console.log(`Retrieved ${gradesData.length} grades`);
           const subjectIds: Record<string, string> = {};
           const studentClassIds = new Set<string>();
           
@@ -100,6 +105,7 @@ export const useOwnGrades = (studentId?: string) => {
           setGradesBySubject(groupedGrades);
           setOwnGrades(gradesData);
         } else {
+          console.log("No grades data found");
           setGradesBySubject({});
           setOwnGrades([]);
         }
