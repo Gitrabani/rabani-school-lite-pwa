@@ -11,12 +11,12 @@ interface ResultFormDownloadButtonProps {
   disabled?: boolean;
 }
 
-// This component is now a placeholder that shows feature removed message
+// This component is a placeholder that shows feature removed message
 const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = () => {
   const handleClick = () => {
     toast({
       title: "Feature Unavailable",
-      description: "The result form download feature has been removed.",
+      description: "The PDF generation feature has been removed.",
       variant: "default"
     });
   };
@@ -28,7 +28,7 @@ const ResultFormDownloadButton: React.FC<ResultFormDownloadButtonProps> = () => 
       className="gap-2 opacity-50"
     >
       <FileText size={16} />
-      Result Form (Removed)
+      PDF Export (Removed)
     </Button>
   );
 };

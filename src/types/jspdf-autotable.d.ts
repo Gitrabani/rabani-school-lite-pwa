@@ -1,4 +1,5 @@
 
+// This file is now simplified as we're removing PDF functionality
 import 'jspdf';
 
 declare module 'jspdf' {
@@ -6,16 +7,6 @@ declare module 'jspdf' {
     autoTable: (options: any) => any;
     lastAutoTable: {
       finalY: number;
-    };
-    internal: {
-      getNumberOfPages: () => number;
-      pageSize: {
-        getWidth: () => number;
-        getHeight: () => number;
-        width: number;
-        height: number;
-      };
-      pages: any[];
     };
   }
 }
