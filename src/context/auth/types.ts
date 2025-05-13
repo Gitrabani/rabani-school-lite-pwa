@@ -5,10 +5,11 @@ export type UserRole = 'admin' | 'teacher' | 'student' | 'parent';
 
 export interface AppUser {
   id: string;
-  name: string;
   email: string;
   role: UserRole;
-  profileImage?: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  isAuthenticated: boolean;
 }
 
 export interface AuthContextType {

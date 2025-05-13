@@ -22,10 +22,13 @@ export const getUserProfileFromSession = async (session: Session | null): Promis
       return null;
     }
 
+    // Ensure the role is a valid UserRole type
+    const userRole: UserRole = validateUserRole(profile?.role);
+
     return {
       id: session.user.id,
       email: session.user.email!,
-      role: profile?.role || 'student', // Default to student if role not found
+      role: userRole,
       fullName: profile?.full_name || '',
       avatarUrl: profile?.avatar_url || null,
       isAuthenticated: true
@@ -34,6 +37,17 @@ export const getUserProfileFromSession = async (session: Session | null): Promis
     console.error('Error in getUserProfileFromSession:', error);
     return null;
   }
+};
+
+/**
+ * Validates and returns a valid UserRole
+ */
+const validateUserRole = (role?: string): UserRole => {
+  const validRoles: UserRole[] = ['admin', 'teacher', 'student', 'parent'];
+  if (role && validRoles.includes(role as UserRole)) {
+    return role as UserRole;
+  }
+  return 'student'; // Default role
 };
 
 /**
