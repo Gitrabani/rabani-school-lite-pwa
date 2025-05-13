@@ -41,11 +41,13 @@ export const getUserProfileFromSession = async (session: Session | null) => {
 export async function handleSignup(
   email: string, 
   password: string, 
-  userData: { fullName: string; role: string }
+  fullName: string,
+  role: string,
+  onSuccess?: () => void
 ): Promise<boolean> {
   try {
     // Ensure the role is a valid UserRole
-    if (!isValidUserRole(userData.role)) {
+    if (!isValidUserRole(role)) {
       toast({
         title: 'Invalid role',
         description: 'The provided user role is not valid',
@@ -59,8 +61,8 @@ export async function handleSignup(
       password,
       options: {
         data: {
-          full_name: userData.fullName,
-          role: userData.role
+          full_name: fullName,
+          role: role
         }
       }
     });
@@ -95,7 +97,11 @@ function isValidUserRole(role: string): role is UserRole {
   return ['admin', 'teacher', 'student', 'parent'].includes(role);
 }
 
-export async function handleLogin(email: string, password: string): Promise<boolean> {
+export async function handleLogin(
+  email: string, 
+  password: string,
+  onSuccess?: (user: AppUser) => void
+): Promise<boolean> {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -123,7 +129,7 @@ export async function handleLogin(email: string, password: string): Promise<bool
   }
 }
 
-export async function handleLogout(): Promise<void> {
+export async function handleLogout(onSuccess?: () => void) {
   try {
     // Check if user is already logged out
     const { data: sessionData } = await supabase.auth.getSession();

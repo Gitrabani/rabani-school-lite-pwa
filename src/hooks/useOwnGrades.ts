@@ -1,130 +1,119 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '../context/auth/AuthProvider';
-import { Student } from '@/types';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/auth/AuthProvider';
 
-export const useOwnGrades = () => {
+export const useOwnGrades = (studentId?: string) => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
   const [ownGrades, setOwnGrades] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [gradesBySubject, setGradesBySubject] = useState<Record<string, any[]>>({});
   const [subjects, setSubjects] = useState<Record<string, string>>({});
   const [classId, setClassId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  // First fetch the student's class ID
   useEffect(() => {
-    const fetchStudentClass = async () => {
-      try {
-        if (!user || user.role !== 'student') return;
-
-        // Get the student's class ID from class_students table
-        const { data: studentClassData, error: studentClassError } = await supabase
-          .from('class_students')
-          .select('class_id')
-          .eq('student_id', user.id)
-          .single();
-        
-        if (studentClassError) {
-          console.error("Error fetching student class:", studentClassError);
-          return;
-        }
-        
-        if (studentClassData && studentClassData.class_id) {
-          setClassId(studentClassData.class_id);
-        } else {
-          console.log("Student is not assigned to any class yet");
-        }
-      } catch (error) {
-        console.error("Error fetching student class:", error);
+    const fetchGrades = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    };
-    
-    if (user?.role === 'student') {
-      fetchStudentClass();
-    }
-  }, [user]);
 
-  // Then fetch subjects when classId is available
-  useEffect(() => {
-    const fetchSubjects = async () => {
       try {
-        if (!classId || !user || user.role !== 'student') return;
+        setLoading(true);
         
-        // Fetch subject information for that class
-        const { data, error } = await supabase
-          .from('class_subjects')
-          .select('subject_id')
-          .eq('class_id', classId);
+        // Use the studentId parameter if provided (for admin/parent view), otherwise use current user's id
+        const effectiveStudentId = studentId || user.id;
         
-        if (error) {
-          console.error("Error fetching subjects:", error);
-          return;
-        }
-        
-        // Create a map of subject IDs to subject names for easy lookup
-        const subjectMap: Record<string, string> = {};
-        for (const subject of data || []) {
-          // Using subject_id as name for now, can be enhanced later to fetch actual subject names
-          subjectMap[subject.subject_id] = subject.subject_id;
-        }
-        
-        setSubjects(subjectMap);
-      } catch (error) {
-        console.error("Error fetching subjects:", error);
-      }
-    };
-    
-    if (classId) {
-      fetchSubjects();
-    }
-  }, [classId, user]);
-
-  // Fetch grades when user is available
-  useEffect(() => {
-    const fetchOwnGrades = async () => {
-      if (!user || user.role !== 'student') return;
-      
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
+        // For admin, we need to fetch either all grades or grades for a specific student
+        let gradesQuery = supabase
           .from('grades')
-          .select('*')
-          .eq('student_id', user.id);
+          .select('*');
         
-        if (error) {
-          console.error("Error fetching grades:", error);
+        // If it's an admin without specific student ID, fetch sample of grades (could be modified to fetch all)
+        if (user.role === 'admin' && !studentId) {
+          gradesQuery = gradesQuery.limit(100); // Just get a reasonable amount for admin overview
+        } else {
+          // For students, parents viewing their child, or admin viewing specific student
+          gradesQuery = gradesQuery.eq('student_id', effectiveStudentId);
+        }
+        
+        const { data: gradesData, error: gradesError } = await gradesQuery;
+        
+        if (gradesError) {
+          console.error("Error fetching grades:", gradesError);
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to load grades",
+            description: "Failed to load grades data"
           });
+          setLoading(false);
           return;
         }
         
-        setOwnGrades(data || []);
+        if (gradesData.length > 0) {
+          const subjects: Record<string, string> = {};
+          const studentClassIds = new Set<string>();
+          
+          // Fetch subject data for the grades
+          for (const grade of gradesData) {
+            subjects[grade.subject_id] = grade.subject_id;
+            studentClassIds.add(grade.class_id);
+          }
+          
+          // If we found a class, store the first one (most typical case for students)
+          if (studentClassIds.size > 0) {
+            setClassId(Array.from(studentClassIds)[0]);
+          }
+          
+          // Get subject names
+          if (Object.keys(subjects).length > 0) {
+            const { data: subjectsData, error: subjectsError } = await supabase
+              .from('subjects')
+              .select('id, name')
+              .in('id', Object.keys(subjects));
+            
+            if (!subjectsError && subjectsData) {
+              const subjectMap: Record<string, string> = {};
+              subjectsData.forEach(subject => {
+                subjectMap[subject.id] = subject.name;
+              });
+              setSubjects(subjectMap);
+            }
+          }
+          
+          // Group grades by subject
+          const groupedGrades: Record<string, any[]> = {};
+          
+          gradesData.forEach(grade => {
+            const subjectName = subjects[grade.subject_id] || grade.subject_id;
+            if (!groupedGrades[subjectName]) {
+              groupedGrades[subjectName] = [];
+            }
+            groupedGrades[subjectName].push(grade);
+          });
+          
+          setGradesBySubject(groupedGrades);
+          setOwnGrades(gradesData);
+        } else {
+          setGradesBySubject({});
+          setOwnGrades([]);
+        }
       } catch (error) {
         console.error("Error:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load grades"
+        });
       } finally {
         setLoading(false);
       }
     };
     
-    if (user?.role === 'student') {
-      fetchOwnGrades();
-    }
-  }, [user]);
-
-  const gradesBySubject = ownGrades.reduce<Record<string, any[]>>((acc, grade) => {
-    const subjectName = subjects[grade.subject_id] || grade.subject_id || 'Unknown Subject';
-    
-    if (!acc[subjectName]) {
-      acc[subjectName] = [];
-    }
-    acc[subjectName].push(grade);
-    
-    return acc;
-  }, {});
+    fetchGrades();
+  }, [user, studentId, toast]);
 
   return { ownGrades, loading, gradesBySubject, subjects, classId };
 };
