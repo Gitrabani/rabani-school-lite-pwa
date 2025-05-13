@@ -191,8 +191,8 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarImage src={user?.profileImage} alt={user?.name} />
-                  <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={user?.avatarUrl || undefined} alt={user?.fullName} />
+                  <AvatarFallback>{user?.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <span className="sr-only">User menu</span>
               </Button>
@@ -201,7 +201,7 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">
-                {user?.name} ({user?.role})
+                {user?.fullName} ({user?.role})
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer" onClick={navigateToProfile}>
                 Profile
