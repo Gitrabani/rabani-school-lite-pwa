@@ -19,6 +19,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 import LoadingScreen from "./components/shared/LoadingScreen";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,8 +39,8 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Redirect root to login page */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              {/* Change root to show Index page instead of redirecting */}
+              <Route path="/" element={<Index />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/dashboard" element={<MainLayout />}>
                 <Route index element={<DashboardPage />} />

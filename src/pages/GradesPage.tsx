@@ -1,57 +1,51 @@
 
-import React from 'react';
-import { useAuth } from '../context/auth/AuthProvider';
-import PageHeader from '../components/shared/PageHeader';
-import StudentGradeView from '@/components/grades/StudentGradeView';
-import TeacherGradeView from '@/components/grades/TeacherGradeView';
-import ParentGradeView from '@/components/grades/ParentGradeView';
-import { Card, CardContent } from '@/components/ui/card';
+import React from "react";
+import { useAuth } from "@/context/auth/AuthProvider";
+import PageHeader from "@/components/shared/PageHeader";
+import TeacherGradeView from "@/components/grades/TeacherGradeView";
+import StudentGradeView from "@/components/grades/StudentGradeView";
+import ParentGradeView from "@/components/grades/ParentGradeView";
 
-const GradesPage: React.FC = () => {
-  const { user } = useAuth();
+const GradesPage = () => {
+  const { user, isLoading } = useAuth();
 
-  console.log('Current user in GradesPage:', user);
+  // Display appropriate loading state while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6">
+        <PageHeader title="Grades" description="Loading..." />
+        <div className="animate-pulse bg-muted h-96 rounded-md"></div>
+      </div>
+    );
+  }
 
-  const renderGradeView = () => {
-    switch (user?.role) {
-      case 'student':
-        console.log('Rendering StudentGradeView for student');
-        return <StudentGradeView />;
-      case 'teacher':
-        console.log('Rendering TeacherGradeView for teacher');
-        return <TeacherGradeView />;
-      case 'parent':
-        console.log('Rendering ParentGradeView for parent');
-        return <ParentGradeView />;
-      case 'admin':
-        // Admin will now see the same view as students with full data
-        console.log('Rendering StudentGradeView for admin');
-        return <StudentGradeView />;
-      default:
-        console.log('No user or unrecognized role, showing login prompt');
-        return (
-          <Card>
-            <CardContent className="py-10 text-center">
-              <p className="text-muted-foreground">Please log in to view grades</p>
-            </CardContent>
-          </Card>
-        );
-    }
-  };
+  // Make sure we have a user before trying to access user.role
+  if (!user) {
+    return (
+      <div className="container mx-auto py-6">
+        <PageHeader title="Grades" description="Please log in to view grades." />
+        <div className="bg-muted p-6 rounded-md text-center">
+          You need to log in to access this page.
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="container mx-auto py-6">
       <PageHeader 
         title="Grades" 
         description={
-          user?.role === 'teacher' ? "Manage student grades" : 
-          user?.role === 'parent' ? "View your children's grades" :
-          user?.role === 'admin' ? "View all grade records" :
-          "View grade records"
+          user.role === "teacher" ? "Manage student grades" : 
+          user.role === "parent" ? "View your child's academic progress" : 
+          "View your academic progress"
         }
       />
-      
-      {renderGradeView()}
+
+      {/* Display appropriate view based on user role */}
+      {user.role === "teacher" && <TeacherGradeView />}
+      {(user.role === "student" || user.role === "admin") && <StudentGradeView />}
+      {user.role === "parent" && <ParentGradeView />}
     </div>
   );
 };

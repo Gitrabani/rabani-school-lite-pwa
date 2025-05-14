@@ -1,8 +1,8 @@
 
 {
-  "name": "School Management System",
-  "short_name": "SMS",
-  "description": "A comprehensive school management system",
+  "name": "Rabani School Management System",
+  "short_name": "Rabani School",
+  "description": "Comprehensive school management system",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -17,8 +17,7 @@
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }

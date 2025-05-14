@@ -8,11 +8,22 @@ import { useReportCardStatus } from '@/hooks/useReportCardStatus';
 import { useAuth } from '../../context/auth/AuthProvider';
 import DownloadReportCardButton from './DownloadReportCardButton';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const StudentGradeView: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { ownGrades, loading, gradesBySubject, subjects, classId } = useOwnGrades();
   const reportReady = useReportCardStatus(user?.id as string);
+
+  if (authLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -38,7 +49,8 @@ const StudentGradeView: React.FC = () => {
         </TabsContent>
       </Tabs>
       
-      {user?.role !== 'admin' && (
+      {/* Only show download options for students, not for admins */}
+      {user && user.role === 'student' && (
         <div className="mt-8 space-y-4">
           <Separator />
           

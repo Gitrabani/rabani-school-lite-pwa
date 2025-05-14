@@ -14,13 +14,17 @@ export const useOwnGrades = (studentId?: string) => {
 
   useEffect(() => {
     const fetchGrades = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
+        
+        // If no user is logged in, don't attempt to fetch grades
+        if (!user) {
+          console.log("No user logged in, skipping grade fetch");
+          setLoading(false);
+          return;
+        }
+        
+        console.log("Fetching grades for user:", user.role);
         
         // For admin, fetch sample of grades if no specific studentId is provided
         // For students, fetch their own grades
@@ -72,15 +76,9 @@ export const useOwnGrades = (studentId?: string) => {
             setClassId(Array.from(studentClassIds)[0]);
           }
           
-          // Since 'subjects' table doesn't exist in Supabase schema, we'll use a hardcoded mapping
-          // or fetch subject data from another source in a real application
-          // For now, we'll just use the subject IDs as names
+          // Format subject IDs to look like names
           const subjectMap: Record<string, string> = {};
-          
-          // We would normally fetch from a subjects table, but since it doesn't exist,
-          // we'll implement a workaround by using subject IDs as names
           Object.keys(subjectIds).forEach(subjectId => {
-            // Format the subject ID to look like a name (e.g., "math_101" -> "Math 101")
             const formattedName = subjectId
               .split('_')
               .map(word => word.charAt(0).toUpperCase() + word.slice(1))
