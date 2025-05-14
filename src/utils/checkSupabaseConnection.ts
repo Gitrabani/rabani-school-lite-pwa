@@ -11,8 +11,8 @@ export async function checkSupabaseConnection(): Promise<{
   serverVersion?: string;
 }> {
   try {
-    // Try to query system time from Supabase
-    const { data, error } = await supabase.from('profiles').select('count()', { count: 'exact' });
+    // Try to query from Supabase without using aggregate functions
+    const { data, error } = await supabase.from('profiles').select('id').limit(1);
     
     if (error) {
       console.error('Supabase connection test failed:', error);
