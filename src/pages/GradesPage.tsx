@@ -38,6 +38,7 @@ const GradesPage = () => {
         description={
           user.role === "teacher" ? "Manage student grades" : 
           user.role === "parent" ? "View your child's academic progress" : 
+          user.role === "admin" ? "View and monitor student grades across the school" :
           "View your academic progress"
         }
       />

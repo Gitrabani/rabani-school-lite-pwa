@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,7 +41,19 @@ export const useOwnGrades = (studentId?: string) => {
         else {
           if (user.role === 'admin') {
             console.log("Admin fetching sample grade data");
-            gradesQuery = gradesQuery.limit(100); // Get a representative sample
+            // For admins, get all grades with a reasonable limit to sample the data
+            gradesQuery = gradesQuery.limit(100); 
+            
+            // Check if the table has any data at all for debugging
+            const { count, error: countError } = await supabase
+              .from('grades')
+              .select('*', { count: 'exact', head: true });
+            
+            if (countError) {
+              console.error("Error checking grades count:", countError);
+            } else {
+              console.log(`Total grades in system: ${count || 0}`);
+            }
           } else {
             console.log(`User ${user.id} fetching their own grades`);
             gradesQuery = gradesQuery.eq('student_id', user.id);
