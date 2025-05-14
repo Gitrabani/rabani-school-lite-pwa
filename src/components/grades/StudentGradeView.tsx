@@ -13,10 +13,11 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import GenerateSampleDataButton from './GenerateSampleDataButton';
 
 const StudentGradeView: React.FC = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { ownGrades, loading, gradesBySubject, subjects, classId } = useOwnGrades();
+  const { ownGrades, loading, gradesBySubject, subjects, classId, refetchGrades } = useOwnGrades();
   const reportReady = useReportCardStatus(user?.id as string);
 
   if (authLoading) {
@@ -37,10 +38,11 @@ const StudentGradeView: React.FC = () => {
         <AlertTitle>No grades data available</AlertTitle>
         <AlertDescription className="space-y-4">
           <p>There are no grades in the system yet. As an admin, you can view grade data once teachers have started entering grades.</p>
-          <div>
+          <div className="flex flex-wrap gap-3 mt-2">
             <Button variant="outline" asChild>
               <Link to="/dashboard/reports">View Reports</Link>
             </Button>
+            <GenerateSampleDataButton onSuccess={refetchGrades} />
           </div>
         </AlertDescription>
       </Alert>
