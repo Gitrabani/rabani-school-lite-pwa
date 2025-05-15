@@ -25,7 +25,7 @@ export const useOwnGrades = (studentId?: string) => {
       
       console.log("Fetching grades for user:", user.role);
       
-      // For admin, fetch sample of grades if no specific studentId is provided
+      // For admin, fetch all grades if no specific studentId is provided
       // For students, fetch their own grades
       // For parent/teachers viewing a specific student, use the provided studentId
       let gradesQuery = supabase.from('grades').select('*');
@@ -35,23 +35,12 @@ export const useOwnGrades = (studentId?: string) => {
         console.log(`Fetching grades for specific student: ${studentId}`);
         gradesQuery = gradesQuery.eq('student_id', studentId);
       } 
-      // Otherwise, for students, use their own ID, for admin fetch all (with limit)
+      // Otherwise, for students, use their own ID, for admin fetch all grades
       else {
         if (user.role === 'admin') {
-          console.log("Admin fetching sample grade data");
-          // For admins, get all grades with a reasonable limit to sample the data
-          gradesQuery = gradesQuery.limit(100); 
-          
-          // Check if the table has any data at all for debugging
-          const { count, error: countError } = await supabase
-            .from('grades')
-            .select('*', { count: 'exact', head: true });
-          
-          if (countError) {
-            console.error("Error checking grades count:", countError);
-          } else {
-            console.log(`Total grades in system: ${count || 0}`);
-          }
+          console.log("Admin fetching all grade data");
+          // For admins, get all grades without limit
+          // We're removing the limit so admins can see all grades in the system
         } else {
           console.log(`User ${user.id} fetching their own grades`);
           gradesQuery = gradesQuery.eq('student_id', user.id);
@@ -140,6 +129,7 @@ export const useOwnGrades = (studentId?: string) => {
     loading, 
     gradesBySubject, 
     subjects, 
-    classId 
+    classId,
+    refetchGrades: fetchGrades
   };
 };
