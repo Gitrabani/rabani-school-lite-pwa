@@ -1,35 +1,49 @@
 
-import { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSettings } from '@/context/SettingsContext';
 
-const Index = () => {
+const Index: React.FC = () => {
+  const { schoolName } = useSettings();
+  
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4 transition-colors duration-200">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4 dark:text-white">Welcome to Rabani School Management System</h1>
-        <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-          A comprehensive platform for managing school operations, student records, and academic activities.
-        </p>
-      </div>
+    <div className="flex flex-col min-h-screen">
+      <header className="bg-slate-800 text-white p-4 shadow-md">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-xl font-bold">School Management System</h1>
+          <Link to="/login">
+            <Button variant="outline" className="text-white border-white hover:bg-slate-700">
+              Login
+            </Button>
+          </Link>
+        </div>
+      </header>
       
-      <Card className="w-full max-w-md dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="dark:text-white">Getting Started</CardTitle>
-          <CardDescription className="dark:text-gray-300">Access the system with your credentials</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button asChild className="w-full">
-            <Link to="/login">Login to Dashboard</Link>
-          </Button>
-          
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-2">
-            <p>If you're experiencing any issues, please contact support.</p>
-            <p>Version 1.0.0</p>
+      <main className="flex-grow container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl font-bold text-slate-800 mb-6">
+            Welcome to {schoolName} Management System
+          </h1>
+          <p className="text-xl text-slate-600 mb-8">
+            A comprehensive solution for managing school operations, attendance tracking,
+            grade management, and communication between teachers, students, and parents.
+          </p>
+          <div className="space-y-4">
+            <Link to="/login">
+              <Button size="lg" className="mr-4">
+                Get Started
+              </Button>
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </main>
+      
+      <footer className="bg-slate-800 text-white p-4 mt-auto">
+        <div className="container mx-auto text-center">
+          <p>&copy; 2025 {schoolName}. All rights reserved.</p>
+        </div>
+      </footer>
     </div>
   );
 };
