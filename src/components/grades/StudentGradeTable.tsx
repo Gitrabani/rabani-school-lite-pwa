@@ -32,7 +32,8 @@ const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
   const {
     savingGrades,
     handleGradeInputChange,
-    handleSaveGrade
+    handleSaveGrade,
+    handleBulkSaveGrades
   } = useGradeOperations(
     selectedClass,
     selectedSubject,
@@ -49,6 +50,7 @@ const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
         role={user?.role}
         newTotalMarks={newTotalMarks}
         setNewTotalMarks={setNewTotalMarks}
+        onBulkSave={isTeacher ? handleBulkSaveGrades : undefined}
       />
       
       <GradeTableContent
