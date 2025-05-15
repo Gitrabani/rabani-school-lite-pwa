@@ -13,11 +13,10 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import GenerateSampleDataButton from './GenerateSampleDataButton';
 
 const StudentGradeView: React.FC = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { ownGrades, loading, gradesBySubject, subjects, classId, refetchGrades } = useOwnGrades();
+  const { ownGrades, loading, gradesBySubject, subjects, classId } = useOwnGrades();
   const reportReady = useReportCardStatus(user?.id as string);
 
   if (authLoading) {
@@ -42,7 +41,6 @@ const StudentGradeView: React.FC = () => {
             <Button variant="outline" asChild>
               <Link to="/dashboard/reports">View Reports</Link>
             </Button>
-            <GenerateSampleDataButton onSuccess={refetchGrades} />
           </div>
         </AlertDescription>
       </Alert>

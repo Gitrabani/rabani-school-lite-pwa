@@ -140,7 +140,6 @@ export const useOwnGrades = (studentId?: string) => {
     loading, 
     gradesBySubject, 
     subjects, 
-    classId, 
-    refetchGrades: fetchGrades 
+    classId 
   };
 };
