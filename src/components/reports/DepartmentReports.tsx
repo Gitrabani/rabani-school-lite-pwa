@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Card,
@@ -12,6 +13,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 import { Download } from 'lucide-react';
 import { useReportData } from '@/hooks/useReportData';
+import { useToast } from '@/hooks/use-toast';
 
 const departmentData = [
   { name: "Faculty", students: 0, teachers: 18, staff: 7 },
@@ -50,6 +52,49 @@ const chartConfig = {
 export const DepartmentReports: React.FC = () => {
   const [reportPeriod, setReportPeriod] = useState("current-year");
   const { departmentData, loading } = useReportData(reportPeriod);
+  const { toast } = useToast();
+  
+  // Function to export department report as CSV
+  const handleExportReport = () => {
+    try {
+      // Create CSV data for department distribution
+      let csvContent = "Department Report\n\n";
+      csvContent += "Department,Students,Teachers,Staff\n";
+      
+      departmentData.forEach(dept => {
+        csvContent += `${dept.name},${dept.students},${dept.teachers},${dept.staff}\n`;
+      });
+      
+      // Add a summary section
+      csvContent += "\n\nDepartment Summary\n";
+      csvContent += "Total Departments," + departmentData.length + "\n";
+      csvContent += "Total Students," + departmentData.reduce((sum, dept) => sum + dept.students, 0) + "\n";
+      csvContent += "Total Teachers," + departmentData.reduce((sum, dept) => sum + dept.teachers, 0) + "\n";
+      csvContent += "Total Staff," + departmentData.reduce((sum, dept) => sum + dept.staff, 0) + "\n";
+      
+      // Create and download the CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `department-report-${reportPeriod}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Report Exported",
+        description: "Department report has been downloaded as CSV"
+      });
+    } catch (error) {
+      console.error("Error exporting report:", error);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "There was an error exporting the report"
+      });
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -67,7 +112,7 @@ export const DepartmentReports: React.FC = () => {
           </Select>
         </div>
         
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExportReport} disabled={loading}>
           <Download size={16} className="mr-2" />
           Export Report
         </Button>

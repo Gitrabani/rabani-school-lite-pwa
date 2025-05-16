@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Card,
@@ -12,6 +13,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContain
 import { Button } from "@/components/ui/button";
 import { Download } from 'lucide-react';
 import { useReportData } from '@/hooks/useReportData';
+import { useToast } from '@/hooks/use-toast';
 
 const attendanceData = [
   { month: "Jan", present: 92, absent: 8, late: 5 },
@@ -55,6 +57,7 @@ const chartConfig = {
 export const AttendanceReports: React.FC = () => {
   const [reportClass, setReportClass] = useState("all");
   const { attendanceData, loading } = useReportData();
+  const { toast } = useToast();
 
   const classOptions = [
     { value: "all", label: "All Classes" },
@@ -62,6 +65,57 @@ export const AttendanceReports: React.FC = () => {
     { value: "class-9", label: "Class 9" },
     { value: "class-8", label: "Class 8" },
   ];
+  
+  // Function to export attendance report as CSV
+  const handleExportReport = () => {
+    try {
+      // Create CSV data for attendance trends
+      let csvContent = "Attendance Report\n\n";
+      csvContent += "Monthly Attendance Trends\n";
+      csvContent += "Month,Present (%),Absent (%),Late (%)\n";
+      
+      attendanceData.forEach(item => {
+        csvContent += `${item.month},${item.present},${item.absent},${item.late}\n`;
+      });
+      
+      // Add summary statistics
+      csvContent += "\n\nAttendance Summary\n";
+      
+      // Calculate averages
+      const avgPresent = attendanceData.reduce((sum, item) => sum + item.present, 0) / attendanceData.length;
+      const avgAbsent = attendanceData.reduce((sum, item) => sum + item.absent, 0) / attendanceData.length;
+      const avgLate = attendanceData.reduce((sum, item) => sum + item.late, 0) / attendanceData.length;
+      
+      csvContent += `Average Present Rate,${avgPresent.toFixed(1)}%\n`;
+      csvContent += `Average Absence Rate,${avgAbsent.toFixed(1)}%\n`;
+      csvContent += `Average Late Rate,${avgLate.toFixed(1)}%\n`;
+      
+      // Add class filter information
+      csvContent += `\nClass Filter: ${classOptions.find(option => option.value === reportClass)?.label || reportClass}\n`;
+      
+      // Create and download the CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `attendance-report-${reportClass}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Report Exported",
+        description: "Attendance report has been downloaded as CSV"
+      });
+    } catch (error) {
+      console.error("Error exporting report:", error);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "There was an error exporting the report"
+      });
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -79,7 +133,7 @@ export const AttendanceReports: React.FC = () => {
           </Select>
         </div>
         
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExportReport} disabled={loading}>
           <Download size={16} className="mr-2" />
           Export Report
         </Button>
