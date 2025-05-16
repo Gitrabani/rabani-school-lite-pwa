@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/card';
 import { useGradeOperations } from '@/hooks/useGradeOperations';
 import GradeTableHeader from './GradeTableHeader';
 import GradeTableContent from './GradeTableContent';
+import { convertGradesToCSV, downloadCSV } from '@/utils/gradesCsvUtils';
+import { format } from 'date-fns';
 
 interface StudentGradeTableProps {
   selectedClass: string;
@@ -44,6 +46,14 @@ const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
     user
   );
 
+  const handleExportCSV = () => {
+    if (!selectedSubject || !selectedExamType) return;
+    
+    const csvContent = convertGradesToCSV(studentGrades, selectedSubject, selectedExamType);
+    const fileName = `grades_${selectedSubject}_${selectedExamType}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    downloadCSV(csvContent, fileName);
+  };
+
   return (
     <Card>
       <GradeTableHeader
@@ -51,6 +61,7 @@ const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
         newTotalMarks={newTotalMarks}
         setNewTotalMarks={setNewTotalMarks}
         onBulkSave={isTeacher ? handleBulkSaveGrades : undefined}
+        onExportCSV={isTeacher ? handleExportCSV : undefined}
       />
       
       <GradeTableContent

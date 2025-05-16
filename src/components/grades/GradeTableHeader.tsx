@@ -4,20 +4,22 @@ import { CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { UserRole } from '@/types';
-import { Save } from 'lucide-react';
+import { Save, Download } from 'lucide-react';
 
 interface GradeTableHeaderProps {
   role?: UserRole;
   newTotalMarks: string;
   setNewTotalMarks: (value: string) => void;
   onBulkSave?: () => void;
+  onExportCSV?: () => void;
 }
 
 const GradeTableHeader: React.FC<GradeTableHeaderProps> = ({ 
   role, 
   newTotalMarks, 
   setNewTotalMarks,
-  onBulkSave
+  onBulkSave,
+  onExportCSV
 }) => {
   const isTeacher = role === 'teacher';
 
@@ -57,6 +59,17 @@ const GradeTableHeader: React.FC<GradeTableHeaderProps> = ({
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save All
+              </Button>
+            )}
+
+            {onExportCSV && (
+              <Button 
+                variant="outline" 
+                onClick={onExportCSV}
+                className="mt-6 ml-2"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
               </Button>
             )}
           </div>
