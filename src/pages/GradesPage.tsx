@@ -26,12 +26,13 @@ const GradesPage = () => {
         description: "Preparing grades export..."
       });
 
-      const { data: grades, error } = await supabase
+      // First get all grades
+      const { data: grades, error: gradesError } = await supabase
         .from("grades")
-        .select("*, profiles!grades_student_id_fkey(full_name)");
+        .select("*");
 
-      if (error) {
-        throw error;
+      if (gradesError) {
+        throw gradesError;
       }
 
       if (!grades || grades.length === 0) {
@@ -43,11 +44,29 @@ const GradesPage = () => {
         return;
       }
 
+      // Get all unique student IDs from the grades
+      const studentIds = [...new Set(grades.map(grade => grade.student_id))];
+
+      // Get student profiles for these IDs
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", studentIds);
+
+      if (profilesError) {
+        throw profilesError;
+      }
+
+      // Create a map of student ID to name for quick lookup
+      const studentNameMap = new Map(
+        profiles?.map(profile => [profile.id, profile.full_name || "Unknown"]) || []
+      );
+
       // Format data for CSV
       let csvContent = "Student ID,Student Name,Subject ID,Class ID,Exam Type,Marks,Total Marks,Date\n";
       
       grades.forEach(grade => {
-        const studentName = grade.profiles ? grade.profiles.full_name : "Unknown";
+        const studentName = studentNameMap.get(grade.student_id) || "Unknown";
         csvContent += `${grade.student_id},"${studentName}",${grade.subject_id},${grade.class_id},${grade.exam_type},${grade.marks},${grade.total_marks},${grade.date}\n`;
       });
 
