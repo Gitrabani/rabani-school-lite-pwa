@@ -18,29 +18,17 @@ export const useParentGradeData = (userId: string | undefined) => {
   const [subjects, setSubjects] = useState<Record<string, string>>({});
   const [reportReady, setReportReady] = useState(false);
 
-  // Fetch parent's children
+  // Fetch parent's children - For now, return empty array since parent_id doesn't exist
+  // This will need to be updated when parent-child relationships are properly implemented
   useEffect(() => {
     const fetchChildren = async () => {
       if (!userId) return;
       
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('role', 'student')
-          .filter('parent_id', 'eq', userId);
-          
-        if (error) throw error;
-        
-        const childrenData = data?.map(child => ({
-          id: child.id,
-          name: child.full_name || 'Unknown Student'
-        })) || [];
-        
-        setChildren(childrenData);
-        if (childrenData.length > 0) {
-          setSelectedChild(childrenData[0].id);
-        }
+        // Since parent_id column doesn't exist, we'll return an empty array for now
+        // This prevents the error and allows the parent view to render properly
+        console.log('Parent-child relationships not yet implemented in database');
+        setChildren([]);
       } catch (error: any) {
         console.error('Error fetching children:', error);
         toast({
