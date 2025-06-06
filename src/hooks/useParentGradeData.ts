@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -18,17 +17,34 @@ export const useParentGradeData = (userId: string | undefined) => {
   const [subjects, setSubjects] = useState<Record<string, string>>({});
   const [reportReady, setReportReady] = useState(false);
 
-  // Fetch parent's children - For now, return empty array since parent_id doesn't exist
-  // This will need to be updated when parent-child relationships are properly implemented
+  // Fetch parent's children using the parent_child_relationships table
   useEffect(() => {
     const fetchChildren = async () => {
       if (!userId) return;
       
       try {
-        // Since parent_id column doesn't exist, we'll return an empty array for now
-        // This prevents the error and allows the parent view to render properly
-        console.log('Parent-child relationships not yet implemented in database');
-        setChildren([]);
+        const { data, error } = await supabase
+          .from('parent_child_relationships')
+          .select(`
+            child_id,
+            profiles!parent_child_relationships_child_id_fkey (
+              id,
+              full_name
+            )
+          `)
+          .eq('parent_id', userId);
+          
+        if (error) throw error;
+        
+        const childrenData = data?.map(relationship => ({
+          id: relationship.child_id,
+          name: relationship.profiles?.full_name || 'Unknown Student'
+        })) || [];
+        
+        setChildren(childrenData);
+        if (childrenData.length > 0) {
+          setSelectedChild(childrenData[0].id);
+        }
       } catch (error: any) {
         console.error('Error fetching children:', error);
         toast({
