@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Upload } from 'lucide-react';
+import { Download, Upload, FileUp } from 'lucide-react';
 
 interface GradeManagementHeaderProps {
   title: string;
@@ -14,7 +14,11 @@ const GradeManagementHeader: React.FC<GradeManagementHeaderProps> = ({ title }) 
       <div className="flex space-x-2">
         <Button variant="outline" size="sm">
           <Upload className="h-4 w-4 mr-2" />
-          Import
+          Import Grades
+        </Button>
+        <Button variant="outline" size="sm">
+          <FileUp className="h-4 w-4 mr-2" />
+          Bulk Upload Reports
         </Button>
         <Button variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />

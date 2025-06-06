@@ -271,6 +271,45 @@ export type Database = {
         }
         Relationships: []
       }
+      report_card_uploads: {
+        Row: {
+          academic_year: string | null
+          created_at: string
+          exam_type: string
+          file_name: string
+          file_path: string
+          id: string
+          student_id: string
+          teacher_id: string
+          updated_at: string
+          upload_date: string
+        }
+        Insert: {
+          academic_year?: string | null
+          created_at?: string
+          exam_type: string
+          file_name: string
+          file_path: string
+          id?: string
+          student_id: string
+          teacher_id: string
+          updated_at?: string
+          upload_date?: string
+        }
+        Update: {
+          academic_year?: string | null
+          created_at?: string
+          exam_type?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+          upload_date?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
