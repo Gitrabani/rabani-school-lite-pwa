@@ -1,149 +1,126 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface ChildInfo {
-  id: string;
-  name: string;
-}
-
-export const useParentGradeData = (userId: string | undefined) => {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [children, setChildren] = useState<ChildInfo[]>([]);
-  const [selectedChild, setSelectedChild] = useState<string>('');
+export const useParentGradeData = (parentId: string | undefined) => {
+  const [children, setChildren] = useState<any[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [childGrades, setChildGrades] = useState<any[]>([]);
-  const [gradesBySubject, setGradesBySubject] = useState<Record<string, any[]>>({});
-  const [subjects, setSubjects] = useState<Record<string, string>>({});
-  const [reportReady, setReportReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  // Fetch parent's children using the parent_child_relationships table
+  // Fetch children for the parent
   useEffect(() => {
     const fetchChildren = async () => {
-      if (!userId) return;
-      
+      if (!parentId) {
+        setChildren([]);
+        return;
+      }
+
       try {
+        console.log('Fetching children for parent:', parentId);
+        
         const { data, error } = await supabase
           .from('parent_child_relationships')
           .select(`
             child_id,
-            profiles!parent_child_relationships_child_id_fkey (
+            child:child_id (
               id,
-              full_name
+              full_name,
+              role
             )
           `)
-          .eq('parent_id', userId);
-          
-        if (error) throw error;
+          .eq('parent_id', parentId);
+
+        if (error) {
+          console.error('Error fetching children:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load children information"
+          });
+          return;
+        }
+
+        console.log('Fetched children:', data);
+        const childrenList = data?.map(item => item.child).filter(child => child) || [];
+        setChildren(childrenList);
         
-        const childrenData = data?.map(relationship => ({
-          id: relationship.child_id,
-          name: relationship.profiles?.full_name || 'Unknown Student'
-        })) || [];
-        
-        setChildren(childrenData);
-        if (childrenData.length > 0) {
-          setSelectedChild(childrenData[0].id);
+        // Auto-select first child if available
+        if (childrenList.length > 0) {
+          setSelectedChildId(childrenList[0].id);
         }
       } catch (error: any) {
-        console.error('Error fetching children:', error);
+        console.error('Unexpected error fetching children:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load children data"
+          description: `Failed to load children: ${error.message}`
         });
-      } finally {
-        setLoading(false);
       }
     };
-    
-    fetchChildren();
-  }, [userId, toast]);
 
-  // Fetch selected child's grades
+    fetchChildren();
+  }, [parentId, toast]);
+
+  // Fetch grades for selected child
   useEffect(() => {
     const fetchChildGrades = async () => {
-      if (!selectedChild) return;
-      
+      if (!selectedChildId) {
+        setChildGrades([]);
+        return;
+      }
+
       setLoading(true);
       try {
+        console.log('Fetching grades for child:', selectedChildId);
+        
         const { data, error } = await supabase
           .from('grades')
-          .select('*')
-          .eq('student_id', selectedChild);
-        
-        if (error) throw error;
-        
+          .select(`
+            *,
+            class:class_id (
+              name,
+              section
+            )
+          `)
+          .eq('student_id', selectedChildId)
+          .eq('finalized', true)
+          .order('date', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching child grades:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load child's grades"
+          });
+          return;
+        }
+
+        console.log('Fetched child grades:', data);
         setChildGrades(data || []);
-        
-        // Process grades by subject
-        const bySubject = (data || []).reduce<Record<string, any[]>>((acc, grade) => {
-          if (!acc[grade.subject_id]) {
-            acc[grade.subject_id] = [];
-          }
-          acc[grade.subject_id].push(grade);
-          return acc;
-        }, {});
-        
-        setGradesBySubject(bySubject);
-        
-        // Set subjects
-        const subjectsMap: Record<string, string> = {};
-        (data || []).forEach(grade => {
-          subjectsMap[grade.subject_id] = grade.subject_id;
-        });
-        
-        setSubjects(subjectsMap);
       } catch (error: any) {
-        console.error('Error fetching child grades:', error);
+        console.error('Unexpected error fetching child grades:', error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load grades data"
+          description: `Failed to load grades: ${error.message}`
         });
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchChildGrades();
-  }, [selectedChild, toast]);
 
-  // Check if report is ready for selected child
-  useEffect(() => {
-    const checkReportStatus = async () => {
-      if (!selectedChild) {
-        setReportReady(false);
-        return;
-      }
-      
-      try {
-        const { data, error } = await supabase
-          .from('grades')
-          .select('finalized')
-          .eq('student_id', selectedChild);
-        
-        if (error) throw error;
-        
-        // Report is ready if all grades are finalized
-        setReportReady(data && data.length > 0 && data.every(g => g.finalized));
-      } catch (error) {
-        console.error('Error checking report status:', error);
-        setReportReady(false);
-      }
-    };
-    
-    checkReportStatus();
-  }, [selectedChild, childGrades]);
+    fetchChildGrades();
+  }, [selectedChildId, toast]);
 
   return {
-    loading,
     children,
-    selectedChild,
-    setSelectedChild,
+    selectedChildId,
+    setSelectedChildId,
     childGrades,
-    gradesBySubject,
-    subjects,
-    reportReady
+    loading
   };
 };

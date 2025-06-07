@@ -10,10 +10,15 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
   const { toast } = useToast();
 
   const fetchStudentsWithGrades = useCallback(async () => {
-    if (!selectedClass || !selectedSubject) return;
+    if (!selectedClass || !selectedSubject) {
+      setStudentGrades([]);
+      return;
+    }
     
     setLoading(true);
     try {
+      console.log('Fetching students for class:', selectedClass, 'subject:', selectedSubject, 'exam:', selectedExamType);
+      
       // Get students for this class
       const { data: classStudentsData, error: classStudentsError } = await supabase
         .from('class_students')
@@ -31,7 +36,8 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
         return;
       }
       
-      if (!classStudentsData.length) {
+      if (!classStudentsData || classStudentsData.length === 0) {
+        console.log('No students found in this class');
         setStudentGrades([]);
         setLoading(false);
         return;
@@ -39,11 +45,13 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
 
       // Get student profiles
       const studentIds = classStudentsData.map(cs => cs.student_id);
+      console.log('Student IDs:', studentIds);
       
       const { data: studentProfiles, error: studentProfilesError } = await supabase
         .from('profiles')
-        .select('*')
-        .in('id', studentIds);
+        .select('id, full_name, role')
+        .in('id', studentIds)
+        .eq('role', 'student');
         
       if (studentProfilesError) {
         console.error("Error fetching student profiles:", studentProfilesError);
@@ -53,6 +61,13 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
           description: "Failed to load student profiles",
         });
         setStudentGrades([]);
+        return;
+      }
+
+      if (!studentProfiles || studentProfiles.length === 0) {
+        console.log('No student profiles found');
+        setStudentGrades([]);
+        setLoading(false);
         return;
       }
 
@@ -69,10 +84,12 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
         console.error("Error fetching grades:", gradesError);
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Failed to load grades",
+          title: "Warning",
+          description: "Failed to load some grade data",
         });
       }
+
+      console.log('Fetched grades:', grades);
 
       // Map students with their grades
       const studentsWithGrades = studentProfiles.map(student => {
@@ -86,12 +103,13 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
         };
       });
       
+      console.log('Students with grades:', studentsWithGrades);
       setStudentGrades(studentsWithGrades);
       
       // Clear any existing grade values to show fresh data
       setNewGradeValues({});
     } catch (error: any) {
-      console.error("Error:", error);
+      console.error("Unexpected error:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -112,6 +130,6 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
     loading, 
     newGradeValues, 
     setNewGradeValues,
-    refetchGrades: fetchStudentsWithGrades // Export the refetch function
+    refetchGrades: fetchStudentsWithGrades
   };
 };
