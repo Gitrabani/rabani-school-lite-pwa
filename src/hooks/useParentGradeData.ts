@@ -8,6 +8,9 @@ export const useParentGradeData = (parentId: string | undefined) => {
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [childGrades, setChildGrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [gradesBySubject, setGradesBySubject] = useState<Record<string, any[]>>({});
+  const [subjects, setSubjects] = useState<Record<string, string>>({});
+  const [reportReady, setReportReady] = useState(false);
   const { toast } = useToast();
 
   // Fetch children for the parent
@@ -25,7 +28,7 @@ export const useParentGradeData = (parentId: string | undefined) => {
           .from('parent_child_relationships')
           .select(`
             child_id,
-            child:child_id (
+            profiles!parent_child_relationships_child_id_fkey (
               id,
               full_name,
               role
@@ -44,7 +47,12 @@ export const useParentGradeData = (parentId: string | undefined) => {
         }
 
         console.log('Fetched children:', data);
-        const childrenList = data?.map(item => item.child).filter(child => child) || [];
+        const childrenList = data?.map(item => ({
+          id: item.profiles?.id,
+          name: item.profiles?.full_name || 'Unknown',
+          role: item.profiles?.role
+        })).filter(child => child.id) || [];
+        
         setChildren(childrenList);
         
         // Auto-select first child if available
@@ -69,6 +77,9 @@ export const useParentGradeData = (parentId: string | undefined) => {
     const fetchChildGrades = async () => {
       if (!selectedChildId) {
         setChildGrades([]);
+        setGradesBySubject({});
+        setSubjects({});
+        setReportReady(false);
         return;
       }
 
@@ -100,7 +111,28 @@ export const useParentGradeData = (parentId: string | undefined) => {
         }
 
         console.log('Fetched child grades:', data);
-        setChildGrades(data || []);
+        const grades = data || [];
+        setChildGrades(grades);
+
+        // Group grades by subject
+        const gradesBySubj = grades.reduce((acc: Record<string, any[]>, grade: any) => {
+          if (!acc[grade.subject_id]) {
+            acc[grade.subject_id] = [];
+          }
+          acc[grade.subject_id].push(grade);
+          return acc;
+        }, {});
+        setGradesBySubject(gradesBySubj);
+
+        // Create subjects map
+        const subjectsMap = grades.reduce((acc: Record<string, string>, grade: any) => {
+          acc[grade.subject_id] = grade.subject_id; // You might want to fetch actual subject names
+          return acc;
+        }, {});
+        setSubjects(subjectsMap);
+
+        // Check if report is ready (simplified logic)
+        setReportReady(grades.length > 0);
       } catch (error: any) {
         console.error('Unexpected error fetching child grades:', error);
         toast({
@@ -118,9 +150,14 @@ export const useParentGradeData = (parentId: string | undefined) => {
 
   return {
     children,
+    selectedChild: selectedChildId,
+    setSelectedChild: setSelectedChildId,
     selectedChildId,
     setSelectedChildId,
     childGrades,
+    gradesBySubject,
+    subjects,
+    reportReady,
     loading
   };
 };

@@ -16,7 +16,7 @@ import { Link } from 'react-router-dom';
 
 const StudentGradeView: React.FC = () => {
   const { user, isLoading: authLoading } = useAuth();
-  const { ownGrades, loading, gradesBySubject, subjects, classId } = useOwnGrades();
+  const { ownGrades, loading, gradesBySubject, subjects, classId } = useOwnGrades(user?.id);
   const reportReady = useReportCardStatus(user?.id as string);
 
   if (authLoading) {
