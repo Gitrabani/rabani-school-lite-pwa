@@ -13,8 +13,9 @@ export const useOwnGrades = (userId?: string) => {
 
   useEffect(() => {
     const fetchGrades = async () => {
+      // Don't fetch if no userId provided
       if (!userId) {
-        console.log('No userId provided to useOwnGrades');
+        console.log('useOwnGrades: No userId provided, skipping fetch');
         setGrades([]);
         setGradesBySubject({});
         setSubjects({});
@@ -22,11 +23,23 @@ export const useOwnGrades = (userId?: string) => {
         return;
       }
 
+      // Check if user is authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.log('useOwnGrades: No active session, skipping fetch');
+        return;
+      }
+
+      if (session.user.id !== userId) {
+        console.log('useOwnGrades: Session user ID does not match provided userId');
+        return;
+      }
+
       setLoading(true);
+      console.log('useOwnGrades: Starting grade fetch for user:', userId);
+      
       try {
-        console.log('Fetching grades for user:', userId);
-        
-        // First, let's check if the user exists in the database
+        // First, verify the user exists in profiles
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id, role')
@@ -34,17 +47,45 @@ export const useOwnGrades = (userId?: string) => {
           .single();
 
         if (profileError) {
-          console.error('Error fetching user profile:', profileError);
+          console.error('useOwnGrades: Profile fetch error:', profileError);
+          if (profileError.code === 'PGRST116') {
+            console.log('useOwnGrades: User profile not found');
+            toast({
+              variant: "destructive",
+              title: "Profile Not Found",
+              description: "User profile not found in the system"
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Profile Error",
+              description: `Failed to verify user profile: ${profileError.message}`
+            });
+          }
+          return;
+        }
+
+        console.log('useOwnGrades: User profile verified:', profileData);
+
+        // Test basic connection to grades table
+        const { data: testData, error: testError } = await supabase
+          .from('grades')
+          .select('id')
+          .limit(1);
+
+        if (testError) {
+          console.error('useOwnGrades: Grades table access test failed:', testError);
           toast({
             variant: "destructive",
-            title: "Error",
-            description: "Failed to verify user profile"
+            title: "Database Error",
+            description: `Cannot access grades table: ${testError.message}`
           });
           return;
         }
 
-        console.log('User profile found:', profileData);
+        console.log('useOwnGrades: Grades table accessible, found', testData?.length || 0, 'test records');
 
+        // Fetch grades for the user
         const { data, error } = await supabase
           .from('grades')
           .select(`
@@ -59,22 +100,16 @@ export const useOwnGrades = (userId?: string) => {
           .order('date', { ascending: false });
 
         if (error) {
-          console.error('Error fetching grades:', error);
-          console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
-          });
+          console.error('useOwnGrades: Grade fetch error:', error);
           toast({
             variant: "destructive",
-            title: "Error",
+            title: "Error Loading Grades",
             description: `Failed to load grades: ${error.message}`
           });
           return;
         }
 
-        console.log('Successfully fetched grades:', data);
+        console.log('useOwnGrades: Successfully fetched grades:', data?.length || 0, 'records');
         const gradesData = data || [];
         setGrades(gradesData);
 
@@ -99,12 +134,13 @@ export const useOwnGrades = (userId?: string) => {
         if (gradesData.length > 0) {
           setClassId(gradesData[0].class_id);
         }
+
       } catch (error: any) {
-        console.error('Unexpected error fetching grades:', error);
+        console.error('useOwnGrades: Unexpected error:', error);
         toast({
           variant: "destructive",
-          title: "Error", 
-          description: `Failed to load grades: ${error.message}`
+          title: "Unexpected Error",
+          description: `An unexpected error occurred: ${error.message}`
         });
       } finally {
         setLoading(false);

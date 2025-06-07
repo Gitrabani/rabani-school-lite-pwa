@@ -17,14 +17,26 @@ export const useParentGradeData = (parentId: string | undefined) => {
   useEffect(() => {
     const fetchChildren = async () => {
       if (!parentId) {
-        console.log('No parentId provided to useParentGradeData');
+        console.log('useParentGradeData: No parentId provided, skipping fetch');
         setChildren([]);
         return;
       }
 
+      // Check if user is authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.log('useParentGradeData: No active session, skipping fetch');
+        return;
+      }
+
+      if (session.user.id !== parentId) {
+        console.log('useParentGradeData: Session user ID does not match provided parentId');
+        return;
+      }
+
+      console.log('useParentGradeData: Starting children fetch for parent:', parentId);
+
       try {
-        console.log('Fetching children for parent:', parentId);
-        
         // First verify the parent exists
         const { data: parentProfile, error: parentError } = await supabase
           .from('profiles')
@@ -33,17 +45,44 @@ export const useParentGradeData = (parentId: string | undefined) => {
           .single();
 
         if (parentError) {
-          console.error('Error fetching parent profile:', parentError);
+          console.error('useParentGradeData: Parent profile fetch error:', parentError);
+          if (parentError.code === 'PGRST116') {
+            toast({
+              variant: "destructive",
+              title: "Parent Profile Not Found",
+              description: "Parent profile not found in the system"
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Profile Error",
+              description: `Failed to verify parent profile: ${parentError.message}`
+            });
+          }
+          return;
+        }
+
+        console.log('useParentGradeData: Parent profile verified:', parentProfile);
+
+        // Test access to parent_child_relationships table
+        const { data: testRelData, error: testRelError } = await supabase
+          .from('parent_child_relationships')
+          .select('id')
+          .limit(1);
+
+        if (testRelError) {
+          console.error('useParentGradeData: Parent-child relationships table access test failed:', testRelError);
           toast({
             variant: "destructive",
-            title: "Error",
-            description: "Failed to verify parent profile"
+            title: "Database Error",
+            description: `Cannot access parent-child relationships: ${testRelError.message}`
           });
           return;
         }
 
-        console.log('Parent profile found:', parentProfile);
+        console.log('useParentGradeData: Parent-child relationships table accessible');
 
+        // Fetch children relationships with explicit column reference
         const { data, error } = await supabase
           .from('parent_child_relationships')
           .select(`
@@ -57,40 +96,36 @@ export const useParentGradeData = (parentId: string | undefined) => {
           .eq('parent_id', parentId);
 
         if (error) {
-          console.error('Error fetching children:', error);
-          console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
-          });
+          console.error('useParentGradeData: Children fetch error:', error);
           toast({
             variant: "destructive",
-            title: "Error",
+            title: "Error Loading Children",
             description: `Failed to load children: ${error.message}`
           });
           return;
         }
 
-        console.log('Fetched children relationships:', data);
+        console.log('useParentGradeData: Raw children data:', data);
+        
         const childrenList = data?.map(item => ({
           id: item.profiles?.id,
           name: item.profiles?.full_name || 'Unknown',
           role: item.profiles?.role
         })).filter(child => child.id) || [];
         
-        console.log('Processed children list:', childrenList);
+        console.log('useParentGradeData: Processed children list:', childrenList);
         setChildren(childrenList);
         
         // Auto-select first child if available
         if (childrenList.length > 0) {
           setSelectedChildId(childrenList[0].id);
         }
+
       } catch (error: any) {
-        console.error('Unexpected error fetching children:', error);
+        console.error('useParentGradeData: Unexpected error fetching children:', error);
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "Unexpected Error",
           description: `Failed to load children: ${error.message}`
         });
       }
@@ -103,6 +138,7 @@ export const useParentGradeData = (parentId: string | undefined) => {
   useEffect(() => {
     const fetchChildGrades = async () => {
       if (!selectedChildId) {
+        console.log('useParentGradeData: No selectedChildId, clearing grades');
         setChildGrades([]);
         setGradesBySubject({});
         setSubjects({});
@@ -110,10 +146,35 @@ export const useParentGradeData = (parentId: string | undefined) => {
         return;
       }
 
+      // Check if user is authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.log('useParentGradeData: No active session for child grades fetch');
+        return;
+      }
+
       setLoading(true);
+      console.log('useParentGradeData: Starting grades fetch for child:', selectedChildId);
+      
       try {
-        console.log('Fetching grades for child:', selectedChildId);
-        
+        // Verify we can access grades table
+        const { data: testGradesData, error: testGradesError } = await supabase
+          .from('grades')
+          .select('id')
+          .limit(1);
+
+        if (testGradesError) {
+          console.error('useParentGradeData: Grades table access test failed:', testGradesError);
+          toast({
+            variant: "destructive",
+            title: "Database Error",
+            description: `Cannot access grades table: ${testGradesError.message}`
+          });
+          return;
+        }
+
+        console.log('useParentGradeData: Grades table accessible for child grades');
+
         const { data, error } = await supabase
           .from('grades')
           .select(`
@@ -128,22 +189,16 @@ export const useParentGradeData = (parentId: string | undefined) => {
           .order('date', { ascending: false });
 
         if (error) {
-          console.error('Error fetching child grades:', error);
-          console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
-          });
+          console.error('useParentGradeData: Child grades fetch error:', error);
           toast({
             variant: "destructive",
-            title: "Error",
+            title: "Error Loading Child Grades",
             description: `Failed to load child's grades: ${error.message}`
           });
           return;
         }
 
-        console.log('Successfully fetched child grades:', data);
+        console.log('useParentGradeData: Successfully fetched child grades:', data?.length || 0, 'records');
         const grades = data || [];
         setChildGrades(grades);
 
@@ -164,13 +219,14 @@ export const useParentGradeData = (parentId: string | undefined) => {
         }, {});
         setSubjects(subjectsMap);
 
-        // Check if report is ready (simplified logic)
+        // Check if report is ready
         setReportReady(grades.length > 0);
+
       } catch (error: any) {
-        console.error('Unexpected error fetching child grades:', error);
+        console.error('useParentGradeData: Unexpected error fetching child grades:', error);
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "Unexpected Error",
           description: `Failed to load grades: ${error.message}`
         });
       } finally {
