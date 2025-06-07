@@ -20,6 +20,8 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
       console.log('useStudentGrades: No active session, skipping fetch');
+      // Clear state when not authenticated
+      setStudentGrades([]);
       return;
     }
     
@@ -27,72 +29,6 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
     console.log('useStudentGrades: Starting fetch for class:', selectedClass, 'subject:', selectedSubject, 'exam:', selectedExamType);
     
     try {
-      // Test database connectivity
-      const { data: connectTest, error: connectError } = await supabase
-        .from('classes')
-        .select('id')
-        .limit(1);
-
-      if (connectError) {
-        console.error('useStudentGrades: Database connectivity test failed:', connectError);
-        toast({
-          variant: "destructive",
-          title: "Database Connection Error",
-          description: `Cannot connect to database: ${connectError.message}`
-        });
-        setStudentGrades([]);
-        return;
-      }
-
-      console.log('useStudentGrades: Database connectivity confirmed');
-
-      // Verify the class exists
-      const { data: classData, error: classError } = await supabase
-        .from('classes')
-        .select('id, name')
-        .eq('id', selectedClass)
-        .single();
-
-      if (classError) {
-        console.error('useStudentGrades: Class verification error:', classError);
-        if (classError.code === 'PGRST116') {
-          toast({
-            variant: "destructive",
-            title: "Class Not Found",
-            description: "The selected class was not found"
-          });
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Class Error",
-            description: `Error verifying class: ${classError.message}`
-          });
-        }
-        setStudentGrades([]);
-        return;
-      }
-
-      console.log('useStudentGrades: Class verified:', classData);
-
-      // Test access to class_students table
-      const { data: testClassStudents, error: testClassStudentsError } = await supabase
-        .from('class_students')
-        .select('id')
-        .limit(1);
-
-      if (testClassStudentsError) {
-        console.error('useStudentGrades: Class students table access test failed:', testClassStudentsError);
-        toast({
-          variant: "destructive",
-          title: "Database Error",
-          description: `Cannot access class students: ${testClassStudentsError.message}`
-        });
-        setStudentGrades([]);
-        return;
-      }
-
-      console.log('useStudentGrades: Class students table accessible');
-
       // Get students for this class
       const { data: classStudentsData, error: classStudentsError } = await supabase
         .from('class_students')
@@ -119,25 +55,6 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
 
       const studentIds = classStudentsData.map(cs => cs.student_id);
       console.log('useStudentGrades: Found student IDs:', studentIds);
-
-      // Test access to profiles table
-      const { data: testProfiles, error: testProfilesError } = await supabase
-        .from('profiles')
-        .select('id')
-        .limit(1);
-
-      if (testProfilesError) {
-        console.error('useStudentGrades: Profiles table access test failed:', testProfilesError);
-        toast({
-          variant: "destructive",
-          title: "Database Error",
-          description: `Cannot access profiles: ${testProfilesError.message}`
-        });
-        setStudentGrades([]);
-        return;
-      }
-
-      console.log('useStudentGrades: Profiles table accessible');
       
       // Get student profiles
       const { data: studentProfiles, error: studentProfilesError } = await supabase
@@ -165,25 +82,6 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
       }
 
       console.log('useStudentGrades: Found student profiles:', studentProfiles);
-
-      // Test access to grades table
-      const { data: testGrades, error: testGradesError } = await supabase
-        .from('grades')
-        .select('id')
-        .limit(1);
-
-      if (testGradesError) {
-        console.error('useStudentGrades: Grades table access test failed:', testGradesError);
-        toast({
-          variant: "destructive",
-          title: "Database Error",
-          description: `Cannot access grades: ${testGradesError.message}`
-        });
-        setStudentGrades([]);
-        return;
-      }
-
-      console.log('useStudentGrades: Grades table accessible');
 
       // Get grades for these students in this subject/exam
       const { data: grades, error: gradesError } = await supabase

@@ -26,6 +26,8 @@ export const useParentGradeData = (parentId: string | undefined) => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
         console.log('useParentGradeData: No active session, skipping fetch');
+        // Clear state when not authenticated
+        setChildren([]);
         return;
       }
 
@@ -37,51 +39,6 @@ export const useParentGradeData = (parentId: string | undefined) => {
       console.log('useParentGradeData: Starting children fetch for parent:', parentId);
 
       try {
-        // First verify the parent exists
-        const { data: parentProfile, error: parentError } = await supabase
-          .from('profiles')
-          .select('id, role')
-          .eq('id', parentId)
-          .single();
-
-        if (parentError) {
-          console.error('useParentGradeData: Parent profile fetch error:', parentError);
-          if (parentError.code === 'PGRST116') {
-            toast({
-              variant: "destructive",
-              title: "Parent Profile Not Found",
-              description: "Parent profile not found in the system"
-            });
-          } else {
-            toast({
-              variant: "destructive",
-              title: "Profile Error",
-              description: `Failed to verify parent profile: ${parentError.message}`
-            });
-          }
-          return;
-        }
-
-        console.log('useParentGradeData: Parent profile verified:', parentProfile);
-
-        // Test access to parent_child_relationships table
-        const { data: testRelData, error: testRelError } = await supabase
-          .from('parent_child_relationships')
-          .select('id')
-          .limit(1);
-
-        if (testRelError) {
-          console.error('useParentGradeData: Parent-child relationships table access test failed:', testRelError);
-          toast({
-            variant: "destructive",
-            title: "Database Error",
-            description: `Cannot access parent-child relationships: ${testRelError.message}`
-          });
-          return;
-        }
-
-        console.log('useParentGradeData: Parent-child relationships table accessible');
-
         // Fetch children relationships with explicit column reference
         const { data, error } = await supabase
           .from('parent_child_relationships')
@@ -150,6 +107,11 @@ export const useParentGradeData = (parentId: string | undefined) => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
         console.log('useParentGradeData: No active session for child grades fetch');
+        // Clear state when not authenticated
+        setChildGrades([]);
+        setGradesBySubject({});
+        setSubjects({});
+        setReportReady(false);
         return;
       }
 
@@ -157,24 +119,6 @@ export const useParentGradeData = (parentId: string | undefined) => {
       console.log('useParentGradeData: Starting grades fetch for child:', selectedChildId);
       
       try {
-        // Verify we can access grades table
-        const { data: testGradesData, error: testGradesError } = await supabase
-          .from('grades')
-          .select('id')
-          .limit(1);
-
-        if (testGradesError) {
-          console.error('useParentGradeData: Grades table access test failed:', testGradesError);
-          toast({
-            variant: "destructive",
-            title: "Database Error",
-            description: `Cannot access grades table: ${testGradesError.message}`
-          });
-          return;
-        }
-
-        console.log('useParentGradeData: Grades table accessible for child grades');
-
         const { data, error } = await supabase
           .from('grades')
           .select(`
