@@ -16,6 +16,7 @@ interface StudentGradeTableProps {
   newGradeValues: Record<string, string>;
   setNewGradeValues: (values: Record<string, string>) => void;
   user: any;
+  onGradesSaved?: () => void; // Add callback prop
 }
 
 const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
@@ -26,7 +27,8 @@ const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
   loading,
   newGradeValues,
   setNewGradeValues,
-  user
+  user,
+  onGradesSaved
 }) => {
   const [newTotalMarks, setNewTotalMarks] = useState<string>('100');
   const isTeacher = user?.role === 'teacher';
@@ -43,7 +45,8 @@ const StudentGradeTable: React.FC<StudentGradeTableProps> = ({
     newGradeValues,
     setNewGradeValues,
     newTotalMarks,
-    user
+    user,
+    onGradesSaved // Pass the callback
   );
 
   const handleExportCSV = () => {

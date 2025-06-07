@@ -30,7 +30,8 @@ const EnhancedTeacherGradeView: React.FC = () => {
     studentGrades,
     loading,
     newGradeValues,
-    setNewGradeValues
+    setNewGradeValues,
+    refetchGrades
   } = useTeacherGradeData(user);
 
   const { comments, updateComment, getComment } = useGradeComments();
@@ -57,6 +58,9 @@ const EnhancedTeacherGradeView: React.FC = () => {
       const comment = getComment(studentId);
       console.log(`Saving grade for ${studentId} with comment: ${comment}`);
       
+      // After saving, refresh the grades
+      await refetchGrades();
+      
       toast({
         title: "Success",
         description: "Grade and feedback saved successfully"
@@ -78,7 +82,28 @@ const EnhancedTeacherGradeView: React.FC = () => {
       description: "Saving all grades and feedback..."
     });
     
-    console.log("Bulk saving grades with comments:", comments);
+    try {
+      console.log("Bulk saving grades with comments:", comments);
+      
+      // After saving, refresh the grades
+      await refetchGrades();
+      
+      toast({
+        title: "Success",
+        description: "All grades saved successfully"
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save grades"
+      });
+    }
+  };
+
+  // Callback to refresh grades after saving
+  const handleGradesSaved = async () => {
+    await refetchGrades();
   };
 
   if (!selectedClass || !selectedSubject) {

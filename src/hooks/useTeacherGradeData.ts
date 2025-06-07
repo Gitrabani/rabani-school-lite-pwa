@@ -1,7 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useClassData } from '@/hooks/useClassData';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useStudentGrades } from '@/hooks/useStudentGrades';
@@ -14,7 +12,7 @@ export const useTeacherGradeData = (user: any) => {
 
   const { classes, loading: classesLoading } = useClassData();
   const { subjects } = useSubjects(selectedClass);
-  const { studentGrades, loading } = useStudentGrades(
+  const { studentGrades, loading, newGradeValues: hookGradeValues, setNewGradeValues: setHookGradeValues, refetchGrades } = useStudentGrades(
     selectedClass,
     selectedSubject,
     selectedExamType
@@ -30,6 +28,11 @@ export const useTeacherGradeData = (user: any) => {
     setSelectedSubject('');
   }, [selectedClass]);
 
+  // Sync the grade values with the hook
+  useEffect(() => {
+    setNewGradeValues(hookGradeValues);
+  }, [hookGradeValues]);
+
   return {
     selectedClass,
     setSelectedClass,
@@ -42,6 +45,7 @@ export const useTeacherGradeData = (user: any) => {
     studentGrades,
     loading: loading || classesLoading,
     newGradeValues,
-    setNewGradeValues
+    setNewGradeValues: setHookGradeValues,
+    refetchGrades // Export the refetch function
   };
 };

@@ -11,7 +11,8 @@ export const useGradeOperations = (
   newGradeValues: Record<string, string>,
   setNewGradeValues: (values: Record<string, string>) => void,
   newTotalMarks: string,
-  user: any
+  user: any,
+  onGradesSaved?: () => void // Add callback to refresh data
 ) => {
   const [savingGrades, setSavingGrades] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
@@ -42,7 +43,7 @@ export const useGradeOperations = (
       return;
     }
     
-    const studentIds = Object.keys(newGradeValues);
+    const studentIds = Object.keys(newGradeValues).filter(id => newGradeValues[id] && newGradeValues[id].trim() !== '');
     
     if (studentIds.length === 0) {
       toast({
@@ -56,7 +57,7 @@ export const useGradeOperations = (
     try {
       toast({
         title: "Saving",
-        description: "Saving all grades...",
+        description: `Saving ${studentIds.length} grades...`,
       });
       
       let successCount = 0;
@@ -64,12 +65,16 @@ export const useGradeOperations = (
       
       for (const studentId of studentIds) {
         const marksValue = newGradeValues[studentId];
-        if (!marksValue) continue;
+        if (!marksValue || marksValue.trim() === '') continue;
         
         const marks = parseFloat(marksValue);
-        if (isNaN(marks) || marks < 0) continue;
+        if (isNaN(marks) || marks < 0) {
+          console.warn(`Invalid marks for student ${studentId}: ${marksValue}`);
+          continue;
+        }
         
-        const { data: existingGrade } = await supabase
+        // Check if grade already exists
+        const { data: existingGrade, error: fetchError } = await supabase
           .from('grades')
           .select('*')
           .eq('student_id', studentId)
@@ -78,22 +83,30 @@ export const useGradeOperations = (
           .eq('exam_type', selectedExamType)
           .maybeSingle();
         
+        if (fetchError) {
+          console.error(`Error checking existing grade for student ${studentId}:`, fetchError);
+          errorCount++;
+          continue;
+        }
+        
         let error;
         
         if (existingGrade) {
-          const result = await supabase
+          // Update existing grade
+          const { error: updateError } = await supabase
             .from('grades')
             .update({
               marks,
               total_marks: totalMarks,
-              updated_at: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
+              updated_at: new Date().toISOString(),
               finalized: true
             })
             .eq('id', existingGrade.id);
           
-          error = result.error;
+          error = updateError;
         } else {
-          const result = await supabase
+          // Insert new grade
+          const { error: insertError } = await supabase
             .from('grades')
             .insert({
               student_id: studentId,
@@ -107,27 +120,35 @@ export const useGradeOperations = (
               finalized: true,
             });
           
-          error = result.error;
+          error = insertError;
         }
         
         if (error) {
           errorCount++;
-          console.error("Error saving grade:", error);
+          console.error(`Error saving grade for student ${studentId}:`, error);
         } else {
           successCount++;
         }
       }
       
+      // Clear the input values after successful save
       if (successCount > 0) {
+        setNewGradeValues({});
+        
+        // Call refresh callback if provided
+        if (onGradesSaved) {
+          onGradesSaved();
+        }
+        
         toast({
           title: "Success",
-          description: `${successCount} grades have been saved successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          description: `${successCount} grades saved successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
         });
       } else if (errorCount > 0) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to save grades",
+          description: "Failed to save grades. Please check the console for details.",
         });
       }
       
@@ -136,16 +157,23 @@ export const useGradeOperations = (
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred while saving grades",
       });
     }
   };
 
   const handleSaveGrade = async (studentId: string) => {
-    if (!user || !selectedClass || !selectedSubject) return;
+    if (!user || !selectedClass || !selectedSubject) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Class and subject must be selected",
+      });
+      return;
+    }
     
     const marksValue = newGradeValues[studentId];
-    if (!marksValue) {
+    if (!marksValue || marksValue.trim() === '') {
       toast({
         variant: "destructive",
         title: "Error",
@@ -178,7 +206,8 @@ export const useGradeOperations = (
     setSavingGrades(prev => ({ ...prev, [studentId]: true }));
     
     try {
-      const { data: existingGrade } = await supabase
+      // Check if grade already exists
+      const { data: existingGrade, error: fetchError } = await supabase
         .from('grades')
         .select('*')
         .eq('student_id', studentId)
@@ -187,27 +216,29 @@ export const useGradeOperations = (
         .eq('exam_type', selectedExamType)
         .maybeSingle();
       
+      if (fetchError) {
+        console.error("Error checking existing grade:", fetchError);
+        throw fetchError;
+      }
+      
       if (existingGrade) {
+        // Update existing grade
         const { error } = await supabase
           .from('grades')
           .update({
             marks,
             total_marks: totalMarks,
-            updated_at: format(new Date(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
+            updated_at: new Date().toISOString(),
             finalized: true
           })
           .eq('id', existingGrade.id);
         
         if (error) {
           console.error("Error updating grade:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to update grade",
-          });
-          return;
+          throw error;
         }
       } else {
+        // Insert new grade
         const { error } = await supabase
           .from('grades')
           .insert({
@@ -224,25 +255,30 @@ export const useGradeOperations = (
         
         if (error) {
           console.error("Error creating grade:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to save grade",
-          });
-          return;
+          throw error;
         }
+      }
+      
+      // Clear the input value for this student
+      const updatedValues = { ...newGradeValues };
+      delete updatedValues[studentId];
+      setNewGradeValues(updatedValues);
+      
+      // Call refresh callback if provided
+      if (onGradesSaved) {
+        onGradesSaved();
       }
       
       toast({
         title: "Success",
-        description: "Grade has been saved",
+        description: "Grade has been saved successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving grade:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred",
+        description: error.message || "Failed to save grade",
       });
     } finally {
       setSavingGrades(prev => ({ ...prev, [studentId]: false }));
