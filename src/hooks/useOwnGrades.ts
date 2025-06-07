@@ -14,6 +14,7 @@ export const useOwnGrades = (userId?: string) => {
   useEffect(() => {
     const fetchGrades = async () => {
       if (!userId) {
+        console.log('No userId provided to useOwnGrades');
         setGrades([]);
         setGradesBySubject({});
         setSubjects({});
@@ -25,11 +26,30 @@ export const useOwnGrades = (userId?: string) => {
       try {
         console.log('Fetching grades for user:', userId);
         
+        // First, let's check if the user exists in the database
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('id', userId)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to verify user profile"
+          });
+          return;
+        }
+
+        console.log('User profile found:', profileData);
+
         const { data, error } = await supabase
           .from('grades')
           .select(`
             *,
-            class:class_id (
+            classes!inner(
               name,
               section
             )
@@ -39,16 +59,22 @@ export const useOwnGrades = (userId?: string) => {
           .order('date', { ascending: false });
 
         if (error) {
-          console.error('Error fetching own grades:', error);
+          console.error('Error fetching grades:', error);
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          });
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to load your grades"
+            description: `Failed to load grades: ${error.message}`
           });
           return;
         }
 
-        console.log('Fetched own grades:', data);
+        console.log('Successfully fetched grades:', data);
         const gradesData = data || [];
         setGrades(gradesData);
 
@@ -64,7 +90,7 @@ export const useOwnGrades = (userId?: string) => {
 
         // Create subjects map
         const subjectsMap = gradesData.reduce((acc: Record<string, string>, grade: any) => {
-          acc[grade.subject_id] = grade.subject_id; // You might want to fetch actual subject names
+          acc[grade.subject_id] = grade.subject_id;
           return acc;
         }, {});
         setSubjects(subjectsMap);
@@ -90,7 +116,7 @@ export const useOwnGrades = (userId?: string) => {
 
   return { 
     grades, 
-    ownGrades: grades, // Alias for backward compatibility
+    ownGrades: grades,
     loading, 
     gradesBySubject, 
     subjects, 

@@ -19,6 +19,26 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
     try {
       console.log('Fetching students for class:', selectedClass, 'subject:', selectedSubject, 'exam:', selectedExamType);
       
+      // First verify the class exists
+      const { data: classData, error: classError } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('id', selectedClass)
+        .single();
+
+      if (classError) {
+        console.error('Error verifying class:', classError);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Selected class not found"
+        });
+        setStudentGrades([]);
+        return;
+      }
+
+      console.log('Class verified:', classData);
+
       // Get students for this class
       const { data: classStudentsData, error: classStudentsError } = await supabase
         .from('class_students')
@@ -70,6 +90,8 @@ export const useStudentGrades = (selectedClass: string, selectedSubject: string,
         setLoading(false);
         return;
       }
+
+      console.log('Found student profiles:', studentProfiles);
 
       // Get grades for these students in this subject/exam
       const { data: grades, error: gradesError } = await supabase

@@ -17,6 +17,7 @@ export const useParentGradeData = (parentId: string | undefined) => {
   useEffect(() => {
     const fetchChildren = async () => {
       if (!parentId) {
+        console.log('No parentId provided to useParentGradeData');
         setChildren([]);
         return;
       }
@@ -24,6 +25,25 @@ export const useParentGradeData = (parentId: string | undefined) => {
       try {
         console.log('Fetching children for parent:', parentId);
         
+        // First verify the parent exists
+        const { data: parentProfile, error: parentError } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('id', parentId)
+          .single();
+
+        if (parentError) {
+          console.error('Error fetching parent profile:', parentError);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to verify parent profile"
+          });
+          return;
+        }
+
+        console.log('Parent profile found:', parentProfile);
+
         const { data, error } = await supabase
           .from('parent_child_relationships')
           .select(`
@@ -38,21 +58,28 @@ export const useParentGradeData = (parentId: string | undefined) => {
 
         if (error) {
           console.error('Error fetching children:', error);
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          });
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to load children information"
+            description: `Failed to load children: ${error.message}`
           });
           return;
         }
 
-        console.log('Fetched children:', data);
+        console.log('Fetched children relationships:', data);
         const childrenList = data?.map(item => ({
           id: item.profiles?.id,
           name: item.profiles?.full_name || 'Unknown',
           role: item.profiles?.role
         })).filter(child => child.id) || [];
         
+        console.log('Processed children list:', childrenList);
         setChildren(childrenList);
         
         // Auto-select first child if available
@@ -91,7 +118,7 @@ export const useParentGradeData = (parentId: string | undefined) => {
           .from('grades')
           .select(`
             *,
-            class:class_id (
+            classes!inner(
               name,
               section
             )
@@ -102,15 +129,21 @@ export const useParentGradeData = (parentId: string | undefined) => {
 
         if (error) {
           console.error('Error fetching child grades:', error);
+          console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          });
           toast({
             variant: "destructive",
             title: "Error",
-            description: "Failed to load child's grades"
+            description: `Failed to load child's grades: ${error.message}`
           });
           return;
         }
 
-        console.log('Fetched child grades:', data);
+        console.log('Successfully fetched child grades:', data);
         const grades = data || [];
         setChildGrades(grades);
 
@@ -126,7 +159,7 @@ export const useParentGradeData = (parentId: string | undefined) => {
 
         // Create subjects map
         const subjectsMap = grades.reduce((acc: Record<string, string>, grade: any) => {
-          acc[grade.subject_id] = grade.subject_id; // You might want to fetch actual subject names
+          acc[grade.subject_id] = grade.subject_id;
           return acc;
         }, {});
         setSubjects(subjectsMap);
