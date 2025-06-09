@@ -3,6 +3,12 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Upload, FileUp, Download } from 'lucide-react';
+import GradeImportDialog from './GradeImportDialog';
+import BulkReportUploadDialog from './BulkReportUploadDialog';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 interface StudentGradesByExamProps {
   ownGrades: any[];
@@ -30,12 +36,66 @@ const StudentGradesByExam: React.FC<StudentGradesByExamProps> = ({
   loading, 
   subjects 
 }) => {
+  const { toast } = useToast();
   const totalsByExam = getTotalsByExamType(ownGrades);
+
+  const handleImportGrades = async (importData: any[]) => {
+    // Placeholder implementation - would need proper integration
+    toast({
+      title: "Import Not Available",
+      description: "Grade import is only available for teachers"
+    });
+  };
+
+  const handleExportGrades = () => {
+    if (ownGrades.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Data",
+        description: "No grades available to export"
+      });
+      return;
+    }
+
+    // Convert to CSV format
+    let csvContent = "Subject,Exam Type,Marks,Total Marks,Percentage,Date\n";
+    
+    ownGrades.forEach(grade => {
+      const subjectName = subjects[grade.subject_id] || grade.subject_id || 'Unknown Subject';
+      const percentage = Math.round((grade.marks / grade.total_marks) * 100);
+      csvContent += `"${subjectName}",${grade.exam_type},${grade.marks},${grade.total_marks},${percentage}%,${grade.date}\n`;
+    });
+
+    const fileName = `my_grades_by_exam_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export Complete",
+      description: "Your grades have been exported successfully"
+    });
+  };
 
   return (
     <Card className="bg-card dark:bg-navy-900">
       <CardHeader>
-        <CardTitle>All Exam Results</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>All Exam Results</CardTitle>
+          <div className="flex gap-2">
+            <GradeImportDialog onImport={handleImportGrades} />
+            <BulkReportUploadDialog classId="student-class" />
+            <Button variant="outline" size="sm" onClick={handleExportGrades}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
