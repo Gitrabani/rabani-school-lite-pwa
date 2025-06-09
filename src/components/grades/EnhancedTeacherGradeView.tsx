@@ -1,22 +1,22 @@
 
-import React, { useState } from 'react';
-import { useAuth } from '@/context/auth/AuthProvider';
-import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 import { useTeacherGradeData } from '@/hooks/useTeacherGradeData';
-import { useGradeComments } from '@/hooks/useGradeComments';
+import { useAuth } from '@/context/auth/AuthProvider';
+import GradeSelectionForm from './GradeSelectionForm';
+import StudentGradeTable from './StudentGradeTable';
 import GradeManagementHeader from './GradeManagementHeader';
-import EmptyGradeState from './EmptyGradeState';
-import EnhancedGradeSelectionForm from './EnhancedGradeSelectionForm';
-import GradeSubmissionStatus from './GradeSubmissionStatus';
-import GradeEntryTable from './GradeEntryTable';
-import TeacherGuidelines from './TeacherGuidelines';
+import GradeImportDialog from './GradeImportDialog';
+import ReportCardUploadDialog from './ReportCardUploadDialog';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { convertGradesToCSV, downloadCSV } from '@/utils/gradesCsvUtils';
+import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { gradeService } from '@/services/gradeService';
 
 const EnhancedTeacherGradeView: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedAssignment, setSelectedAssignment] = useState('general');
-  const [newTotalMarks, setNewTotalMarks] = useState('100');
-  const [savingGrades, setSavingGrades] = useState<Record<string, boolean>>({});
   
   const {
     selectedClass,
@@ -34,137 +34,113 @@ const EnhancedTeacherGradeView: React.FC = () => {
     refetchGrades
   } = useTeacherGradeData(user);
 
-  const { comments, updateComment, getComment } = useGradeComments();
-
-  // Mock assignments data - in real app, this would come from a hook
-  const assignments = [
-    { id: 'hw1', name: 'Homework 1', type: 'assignment', maxMarks: 20, dueDate: '2024-01-15' },
-    { id: 'quiz1', name: 'Chapter 1 Quiz', type: 'quiz', maxMarks: 15 },
-    { id: 'project1', name: 'Science Fair Project', type: 'project', maxMarks: 50, dueDate: '2024-02-01' }
-  ];
-
-  const gradedStudents = studentGrades.filter(s => s.grade).length;
-  const pendingStudents = studentGrades.length - gradedStudents;
-  const hasUnsavedChanges = Object.keys(newGradeValues).length > 0;
-
-  const handleGradeInputChange = (studentId: string, value: string) => {
-    setNewGradeValues(prev => ({ ...prev, [studentId]: value }));
-  };
-
-  const handleSaveGrade = async (studentId: string) => {
-    setSavingGrades(prev => ({ ...prev, [studentId]: true }));
-    
-    try {
-      const comment = getComment(studentId);
-      console.log(`Saving grade for ${studentId} with comment: ${comment}`);
-      
-      // After saving, refresh the grades
-      await refetchGrades();
-      
-      toast({
-        title: "Success",
-        description: "Grade and feedback saved successfully"
-      });
-    } catch (error) {
+  const handleImportGrades = async (importData: any[]) => {
+    if (!selectedClass || !selectedSubject || !user) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to save grade"
+        description: "Please select class and subject before importing"
       });
-    } finally {
-      setSavingGrades(prev => ({ ...prev, [studentId]: false }));
+      return;
+    }
+
+    try {
+      const gradesData = importData.map(row => ({
+        student_id: row['Student ID'],
+        subject_id: selectedSubject,
+        class_id: selectedClass,
+        exam_type: selectedExamType,
+        marks: parseFloat(row['Marks']),
+        total_marks: parseFloat(row['Total Marks'] || '100'),
+        date: format(new Date(), 'yyyy-MM-dd'),
+        created_by: user.id,
+        finalized: true,
+      }));
+
+      const result = await gradeService.bulkSaveGrades(gradesData, []);
+      
+      if (result.success) {
+        toast({
+          title: "Import Successful",
+          description: `${result.insertedCount} grades imported successfully`
+        });
+        await refetchGrades();
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Import Failed",
+        description: error.message || "Failed to import grades"
+      });
     }
   };
 
-  const handleBulkSave = async () => {
+  const handleExportGrades = () => {
+    if (!selectedSubject || !selectedExamType || studentGrades.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Export Error",
+        description: "No grades to export. Please select class and subject with grades."
+      });
+      return;
+    }
+    
+    const csvContent = convertGradesToCSV(studentGrades, selectedSubject, selectedExamType);
+    const fileName = `grades_${selectedSubject}_${selectedExamType}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    downloadCSV(csvContent, fileName);
+    
     toast({
-      title: "Saving",
-      description: "Saving all grades and feedback..."
+      title: "Export Complete",
+      description: "Grades exported successfully"
     });
-    
-    try {
-      console.log("Bulk saving grades with comments:", comments);
-      
-      // After saving, refresh the grades
-      await refetchGrades();
-      
-      toast({
-        title: "Success",
-        description: "All grades saved successfully"
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save grades"
-      });
-    }
   };
-
-  // Callback to refresh grades after saving
-  const handleGradesSaved = async () => {
-    await refetchGrades();
-  };
-
-  if (!selectedClass || !selectedSubject) {
-    return (
-      <EmptyGradeState
-        selectedClass={selectedClass}
-        setSelectedClass={setSelectedClass}
-        selectedSubject={selectedSubject}
-        setSelectedSubject={setSelectedSubject}
-        selectedExamType={selectedExamType}
-        setSelectedExamType={setSelectedExamType}
-        selectedAssignment={selectedAssignment}
-        setSelectedAssignment={setSelectedAssignment}
-        classes={classes}
-        subjects={subjects}
-        assignments={assignments}
-      />
-    );
-  }
 
   return (
-    <div>
-      <GradeManagementHeader title="Enhanced Grade Management" />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <GradeManagementHeader title="Grade Management" />
+        
+        <div className="flex space-x-2">
+          <GradeImportDialog onImport={handleImportGrades} />
+          
+          {selectedClass && studentGrades.length > 0 && (
+            <ReportCardUploadDialog 
+              studentId={studentGrades[0]?.id || ''} 
+              studentName="Bulk Upload"
+            />
+          )}
+          
+          <Button variant="outline" size="sm" onClick={handleExportGrades}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
+      </div>
 
-      <EnhancedGradeSelectionForm
+      <GradeSelectionForm
         selectedClass={selectedClass}
         setSelectedClass={setSelectedClass}
         selectedSubject={selectedSubject}
         setSelectedSubject={setSelectedSubject}
         selectedExamType={selectedExamType}
         setSelectedExamType={setSelectedExamType}
-        selectedAssignment={selectedAssignment}
-        setSelectedAssignment={setSelectedAssignment}
         classes={classes}
         subjects={subjects}
-        assignments={assignments}
       />
 
-      <GradeSubmissionStatus
-        totalStudents={studentGrades.length}
-        gradedStudents={gradedStudents}
-        pendingStudents={pendingStudents}
-        hasUnsavedChanges={hasUnsavedChanges}
-      />
-
-      <GradeEntryTable
-        studentGrades={studentGrades}
-        loading={loading}
-        newGradeValues={newGradeValues}
-        newTotalMarks={newTotalMarks}
-        setNewTotalMarks={setNewTotalMarks}
-        savingGrades={savingGrades}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onGradeInputChange={handleGradeInputChange}
-        onSaveGrade={handleSaveGrade}
-        onBulkSave={handleBulkSave}
-        onCommentChange={updateComment}
-        getComment={getComment}
-      />
-
-      <TeacherGuidelines />
+      {selectedClass && selectedSubject && (
+        <StudentGradeTable
+          selectedClass={selectedClass}
+          selectedSubject={selectedSubject}
+          selectedExamType={selectedExamType}
+          studentGrades={studentGrades}
+          loading={loading}
+          newGradeValues={newGradeValues}
+          setNewGradeValues={setNewGradeValues}
+          user={user}
+          onGradesSaved={refetchGrades}
+        />
+      )}
     </div>
   );
 };
