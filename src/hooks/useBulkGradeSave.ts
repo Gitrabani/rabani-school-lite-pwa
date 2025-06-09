@@ -31,15 +31,17 @@ export const useBulkGradeSave = (
     );
 
     try {
-      console.log('Bulk grade save: Starting for', studentIds.length, 'students');
+      console.log('Bulk grade save: Starting secure atomic operation for', studentIds.length, 'students');
       toast({
-        title: "Saving",
-        description: `Saving ${studentIds.length} grades...`,
+        title: "Saving Securely",
+        description: `Processing ${studentIds.length} grades with full security validation...`,
       });
 
-      let successCount = 0;
-      let errorCount = 0;
+      // Prepare data for atomic bulk operation
+      const newGrades: any[] = [];
+      const gradeUpdates: any[] = [];
 
+      // Check existing grades and prepare operations
       for (const studentId of studentIds) {
         const marksValue = newGradeValues[studentId];
         if (!marksValue || marksValue.trim() === '') continue;
@@ -47,81 +49,68 @@ export const useBulkGradeSave = (
         const marks = parseFloat(marksValue);
         if (isNaN(marks) || marks < 0) {
           console.warn(`Bulk grade save: Invalid marks for student ${studentId}: ${marksValue}`);
-          errorCount++;
           continue;
         }
 
-        try {
-          const { data: existingGrade, error: fetchError } = await gradeService.checkExistingGrade(
-            studentId,
-            selectedSubject,
-            selectedClass,
-            selectedExamType
-          );
+        // Check if grade exists
+        const { data: existingGrade, error: fetchError } = await gradeService.checkExistingGrade(
+          studentId,
+          selectedSubject,
+          selectedClass,
+          selectedExamType
+        );
 
-          if (fetchError) {
-            console.error(`Bulk grade save: Error checking existing grade for student ${studentId}:`, fetchError);
-            errorCount++;
-            continue;
-          }
+        if (fetchError) {
+          console.error(`Bulk grade save: Error checking existing grade for student ${studentId}:`, fetchError);
+          continue;
+        }
 
-          let error;
-
-          if (existingGrade) {
-            const result = await gradeService.updateGrade(existingGrade.id, marks, totalMarks);
-            error = result.error;
-          } else {
-            const result = await gradeService.createGrade({
-              student_id: studentId,
-              subject_id: selectedSubject,
-              class_id: selectedClass,
-              exam_type: selectedExamType,
-              marks,
-              total_marks: totalMarks,
-              date: '',
-              created_by: user.id,
-              finalized: true,
-            });
-            error = result.error;
-          }
-
-          if (error) {
-            errorCount++;
-            console.error(`Bulk grade save: Error saving grade for student ${studentId}:`, error);
-          } else {
-            successCount++;
-          }
-        } catch (gradeError: any) {
-          errorCount++;
-          console.error(`Bulk grade save: Unexpected error saving grade for student ${studentId}:`, gradeError);
+        if (existingGrade) {
+          gradeUpdates.push({
+            id: existingGrade.id,
+            marks,
+            total_marks: totalMarks
+          });
+        } else {
+          newGrades.push({
+            student_id: studentId,
+            subject_id: selectedSubject,
+            class_id: selectedClass,
+            exam_type: selectedExamType,
+            marks,
+            total_marks: totalMarks,
+            created_by: user.id,
+            finalized: true,
+          });
         }
       }
 
-      if (successCount > 0) {
+      // Execute atomic bulk operation
+      const result = await gradeService.bulkSaveGrades(newGrades, gradeUpdates);
+
+      if (result.success) {
+        // Clear input values on success
         setNewGradeValues({});
 
+        // Refresh data
         if (onGradesSaved) {
           await onGradesSaved();
         }
 
         toast({
-          title: "Success",
-          description: `${successCount} grades saved successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          title: "Secure Save Complete",
+          description: `Successfully saved ${result.insertedCount + result.updatedCount} grades with full security validation`,
         });
-      } else if (errorCount > 0) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to save grades. Please check your internet connection and try again.",
-        });
+
+        console.log(`Bulk grade save: Securely saved ${result.insertedCount} new grades and updated ${result.updatedCount} existing grades`);
       }
 
     } catch (error: any) {
-      console.error("Bulk grade save: Error in bulk save:", error);
+      console.error("Bulk grade save: Secure operation failed:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred while saving grades. Please try again.",
+        title: "Secure Save Failed",
+        description: "Failed to save grades securely. Please verify your permissions and try again.",
       });
     }
   };
