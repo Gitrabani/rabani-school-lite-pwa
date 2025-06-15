@@ -49,20 +49,34 @@ const AssignmentGrading: React.FC<AssignmentGradingProps> = ({
 
   const fetchSubmissions = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: submissionsData, error: submissionsError } = await supabase
         .from('assignment_submissions')
-        .select(`
-          *,
-          student:profiles!assignment_submissions_student_id_fkey(id, full_name)
-        `)
+        .select('*')
         .eq('assignment_id', assignment.id);
 
-      if (error) throw error;
-      setSubmissions(data || []);
+      if (submissionsError) throw submissionsError;
+
+      // Fetch student profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name');
+
+      if (profilesError) throw profilesError;
+
+      // Combine submissions with student data
+      const submissionsWithStudents = submissionsData?.map(submission => {
+        const student = profilesData?.find(profile => profile.id === submission.student_id);
+        return {
+          ...submission,
+          student: student || { id: submission.student_id, full_name: 'Unknown Student' }
+        };
+      }) || [];
+
+      setSubmissions(submissionsWithStudents);
 
       // Initialize grading data
       const initialGradingData: Record<string, { grade: string; feedback: string }> = {};
-      data?.forEach((submission) => {
+      submissionsWithStudents.forEach((submission) => {
         initialGradingData[submission.id] = {
           grade: submission.grade?.toString() || '',
           feedback: submission.feedback || '',
