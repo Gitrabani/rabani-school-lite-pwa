@@ -3,6 +3,7 @@ import React from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import StudentGradesBySubject from './StudentGradesBySubject';
 import StudentGradesByExam from './StudentGradesByExam';
+import TranscriptGenerator from './TranscriptGenerator';
 import { useOwnGrades } from '@/hooks/useOwnGrades';
 import { useReportCardStatus } from '@/hooks/useReportCardStatus';
 import { useAuth } from '../../context/auth/AuthProvider';
@@ -48,7 +49,7 @@ const StudentGradeView: React.FC = () => {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       <Tabs defaultValue="bySubject">
         <TabsList className="mb-4">
           <TabsTrigger value="bySubject">By Subject</TabsTrigger>
@@ -70,6 +71,14 @@ const StudentGradeView: React.FC = () => {
           />
         </TabsContent>
       </Tabs>
+      
+      {/* Transcript Generator - Show for students and admins */}
+      {user && (user.role === 'student' || user.role === 'admin') && user.id && (
+        <div className="space-y-4">
+          <Separator />
+          <TranscriptGenerator studentId={user.id} />
+        </div>
+      )}
       
       {/* Only show download options for students, not for admins */}
       {user && user.role === 'student' && (

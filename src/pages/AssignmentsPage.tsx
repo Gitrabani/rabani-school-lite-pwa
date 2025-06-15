@@ -6,7 +6,9 @@ import AssignmentManagement from '@/components/assignments/AssignmentManagement'
 const AssignmentsPage: React.FC = () => {
   return (
     <MainLayout>
-      <AssignmentManagement />
+      <div>
+        <AssignmentManagement />
+      </div>
     </MainLayout>
   );
 };
