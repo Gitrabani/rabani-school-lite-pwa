@@ -16,14 +16,14 @@ import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Users', href: '/users', icon: Users },
-  { name: 'Classes', href: '/classes', icon: GraduationCap },
-  { name: 'Attendance', href: '/attendance', icon: ClipboardCheck },
-  { name: 'Grades', href: '/grades', icon: BarChart3 },
-  { name: 'Assignments', href: '/assignments', icon: BookOpen },
-  { name: 'Announcements', href: '/announcements', icon: MessageSquare },
-  { name: 'Reports', href: '/reports', icon: FileText },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Users', href: '/dashboard/users', icon: Users },
+  { name: 'Classes', href: '/dashboard/classes', icon: GraduationCap },
+  { name: 'Attendance', href: '/dashboard/attendance', icon: ClipboardCheck },
+  { name: 'Grades', href: '/dashboard/grades', icon: BarChart3 },
+  { name: 'Assignments', href: '/dashboard/assignments', icon: BookOpen },
+  { name: 'Announcements', href: '/dashboard/announcements', icon: MessageSquare },
+  { name: 'Reports', href: '/dashboard/reports', icon: FileText },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 const Sidebar: React.FC = () => {

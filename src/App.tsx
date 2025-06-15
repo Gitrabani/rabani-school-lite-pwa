@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import MainLayout from './components/layout/MainLayout';
 import Index from './pages/Index';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -32,16 +33,18 @@ const App: React.FC = () => {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/users" element={<UsersPage />} />
-                <Route path="/classes" element={<ClassesPage />} />
-                <Route path="/attendance" element={<AttendancePage />} />
-                <Route path="/grades" element={<GradesPage />} />
-                <Route path="/assignments" element={<AssignmentsPage />} />
-                <Route path="/announcements" element={<AnnouncementsPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/dashboard" element={<MainLayout />}>
+                  <Route index element={<DashboardPage />} />
+                  <Route path="users" element={<UsersPage />} />
+                  <Route path="classes" element={<ClassesPage />} />
+                  <Route path="attendance" element={<AttendancePage />} />
+                  <Route path="grades" element={<GradesPage />} />
+                  <Route path="assignments" element={<AssignmentsPage />} />
+                  <Route path="announcements" element={<AnnouncementsPage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>
