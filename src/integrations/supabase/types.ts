@@ -294,6 +294,116 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_conflicts: {
+        Row: {
+          conflict_details: Json | null
+          conflict_type: string
+          created_at: string
+          exam1_id: string
+          exam2_id: string
+          id: string
+          resolved: boolean
+        }
+        Insert: {
+          conflict_details?: Json | null
+          conflict_type: string
+          created_at?: string
+          exam1_id: string
+          exam2_id: string
+          id?: string
+          resolved?: boolean
+        }
+        Update: {
+          conflict_details?: Json | null
+          conflict_type?: string
+          created_at?: string
+          exam1_id?: string
+          exam2_id?: string
+          id?: string
+          resolved?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_conflicts_exam1_id_fkey"
+            columns: ["exam1_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_conflicts_exam2_id_fkey"
+            columns: ["exam2_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          class_id: string
+          created_at: string
+          created_by: string
+          duration_minutes: number
+          end_time: string
+          exam_date: string
+          exam_type: string
+          id: string
+          instructions: string | null
+          invigilator_id: string | null
+          room_number: string | null
+          start_time: string
+          subject_id: string
+          title: string
+          total_marks: number
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          created_by: string
+          duration_minutes: number
+          end_time: string
+          exam_date: string
+          exam_type?: string
+          id?: string
+          instructions?: string | null
+          invigilator_id?: string | null
+          room_number?: string | null
+          start_time: string
+          subject_id: string
+          title: string
+          total_marks?: number
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number
+          end_time?: string
+          exam_date?: string
+          exam_type?: string
+          id?: string
+          instructions?: string | null
+          invigilator_id?: string | null
+          room_number?: string | null
+          start_time?: string
+          subject_id?: string
+          title?: string
+          total_marks?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grades: {
         Row: {
           class_id: string
@@ -454,7 +564,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      detect_exam_conflicts: {
+        Args: { exam_id: string }
+        Returns: {
+          conflict_exam_id: string
+          conflict_type: string
+          conflict_details: Json
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

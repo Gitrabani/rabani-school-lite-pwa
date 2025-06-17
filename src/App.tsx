@@ -18,6 +18,7 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import AssignmentsPage from './pages/AssignmentsPage';
+import ExamsPage from './pages/ExamsPage';
 import NotFound from './pages/NotFound';
 import './App.css';
 
@@ -40,6 +41,7 @@ const App: React.FC = () => {
                   <Route path="attendance" element={<AttendancePage />} />
                   <Route path="grades" element={<GradesPage />} />
                   <Route path="assignments" element={<AssignmentsPage />} />
+                  <Route path="exams" element={<ExamsPage />} />
                   <Route path="announcements" element={<AnnouncementsPage />} />
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="settings" element={<SettingsPage />} />

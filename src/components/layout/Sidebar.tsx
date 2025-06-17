@@ -10,7 +10,8 @@ import {
   MessageSquare, 
   FileText, 
   Settings,
-  BookOpen
+  BookOpen,
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +23,7 @@ const allNavigation = [
   { name: 'Attendance', href: '/dashboard/attendance', icon: ClipboardCheck, roles: ['admin', 'teacher', 'student', 'parent'] },
   { name: 'Grades', href: '/dashboard/grades', icon: BarChart3, roles: ['admin', 'teacher', 'student', 'parent'] },
   { name: 'Assignments', href: '/dashboard/assignments', icon: BookOpen, roles: ['teacher', 'student'] },
+  { name: 'Exams', href: '/dashboard/exams', icon: Calendar, roles: ['admin', 'teacher'] },
   { name: 'Announcements', href: '/dashboard/announcements', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'parent'] },
   { name: 'Reports', href: '/dashboard/reports', icon: FileText, roles: ['admin'] },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
