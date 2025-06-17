@@ -13,21 +13,28 @@ import {
   BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Users', href: '/dashboard/users', icon: Users },
-  { name: 'Classes', href: '/dashboard/classes', icon: GraduationCap },
-  { name: 'Attendance', href: '/dashboard/attendance', icon: ClipboardCheck },
-  { name: 'Grades', href: '/dashboard/grades', icon: BarChart3 },
-  { name: 'Assignments', href: '/dashboard/assignments', icon: BookOpen },
-  { name: 'Announcements', href: '/dashboard/announcements', icon: MessageSquare },
-  { name: 'Reports', href: '/dashboard/reports', icon: FileText },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+const allNavigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: Home, roles: ['admin', 'teacher', 'student', 'parent'] },
+  { name: 'Users', href: '/dashboard/users', icon: Users, roles: ['admin'] },
+  { name: 'Classes', href: '/dashboard/classes', icon: GraduationCap, roles: ['admin', 'teacher', 'student'] },
+  { name: 'Attendance', href: '/dashboard/attendance', icon: ClipboardCheck, roles: ['admin', 'teacher', 'student', 'parent'] },
+  { name: 'Grades', href: '/dashboard/grades', icon: BarChart3, roles: ['admin', 'teacher', 'student', 'parent'] },
+  { name: 'Assignments', href: '/dashboard/assignments', icon: BookOpen, roles: ['teacher'] },
+  { name: 'Announcements', href: '/dashboard/announcements', icon: MessageSquare, roles: ['admin', 'teacher', 'student', 'parent'] },
+  { name: 'Reports', href: '/dashboard/reports', icon: FileText, roles: ['admin'] },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
 ];
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
+
+  // Filter navigation items based on user role
+  const navigation = allNavigation.filter(item => 
+    user?.role && item.roles.includes(user.role)
+  );
 
   return (
     <div className="w-64 bg-white shadow-md">
