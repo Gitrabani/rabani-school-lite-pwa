@@ -47,12 +47,14 @@ const ExamForm: React.FC<ExamFormProps> = ({ exam, onClose }) => {
     invigilator_id: '',
   });
   const [classes, setClasses] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     fetchClasses();
+    fetchSubjects();
     if (exam) {
       setFormData({
         title: exam.title,
@@ -82,6 +84,22 @@ const ExamForm: React.FC<ExamFormProps> = ({ exam, onClose }) => {
       setClasses(data || []);
     } catch (error) {
       console.error('Error fetching classes:', error);
+    }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('class_subjects')
+        .select('subject_id')
+        .order('subject_id');
+
+      if (error) throw error;
+      // Get unique subjects
+      const uniqueSubjects = [...new Set(data?.map(item => item.subject_id) || [])];
+      setSubjects(uniqueSubjects.map(subject => ({ id: subject, name: subject })));
+    } catch (error) {
+      console.error('Error fetching subjects:', error);
     }
   };
 
@@ -180,13 +198,18 @@ const ExamForm: React.FC<ExamFormProps> = ({ exam, onClose }) => {
 
             <div>
               <Label htmlFor="subject_id">Subject</Label>
-              <Input
-                id="subject_id"
-                value={formData.subject_id}
-                onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
-                placeholder="e.g., Mathematics"
-                required
-              />
+              <Select value={formData.subject_id} onValueChange={(value) => setFormData({ ...formData, subject_id: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject: any) => (
+                    <SelectItem key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
