@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
-import { ThreadList } from '@/components/messages/ThreadList';
+import React, { useEffect } from 'react';
+import { ThreadListWithSearch } from '@/components/messages/ThreadListWithSearch';
 import { MessageThread } from '@/components/messages/MessageThread';
 import { MessageThreadType } from '@/types/messaging';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
+import { useMessages } from '@/hooks/useMessages';
+import { useToast } from '@/hooks/use-toast';
 
 const MessagesPage: React.FC = () => {
   const [selectedThread, setSelectedThread] =
     useState<MessageThreadType | null>(null);
   const [showThreadList, setShowThreadList] = useState(true);
+  const { threads, loading, fetchThreads, unreadCount } = useMessages();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchThreads();
+    // Refresh threads every 30 seconds
+    const interval = setInterval(fetchThreads, 30000);
+    return () => clearInterval(interval);
+  }, [fetchThreads]);
 
   const handleSelectThread = (thread: MessageThreadType) => {
     setSelectedThread(thread);
@@ -24,7 +35,7 @@ const MessagesPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col">
       <PageHeader
-        title="Messages"
+        title={`Messages ${unreadCount > 0 ? `(${unreadCount})` : ''}`}
         description="Chat with parents and teachers"
       />
 
@@ -36,24 +47,13 @@ const MessagesPage: React.FC = () => {
               showThreadList && window.innerWidth < 768
                 ? 'col-span-1'
                 : 'md:col-span-1'
-            } border rounded-lg bg-white p-4 overflow-y-auto`}
+            } border rounded-lg bg-white overflow-hidden`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold">Conversations</h2>
-              {selectedThread && window.innerWidth < 768 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleBack}
-                  className="md:hidden"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            <ThreadList
+            <ThreadListWithSearch
+              threads={threads}
               onSelectThread={handleSelectThread}
               selectedThreadId={selectedThread?.other_user_id}
+              isLoading={loading}
             />
           </div>
         )}
@@ -88,4 +88,5 @@ const MessagesPage: React.FC = () => {
   );
 };
 
+import { useState } from 'react';
 export default MessagesPage;
