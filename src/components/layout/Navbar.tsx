@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Menu, Bell, User, Moon, Sun } from 'lucide-react';
+import { Menu, Bell, User, Moon, Sun, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useMessages } from '@/hooks/useMessages';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   const { user, logout } = useAuth();
   const { schoolName } = useSettings();
   const { toast } = useToast();
+  const { unreadCount } = useMessages();
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: '1', message: 'New announcement posted', date: new Date().toISOString() },
     { id: '2', message: 'Your attendance has been marked', date: new Date(Date.now() - 3600000).toISOString() },
@@ -58,6 +60,10 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
 
   const navigateToSettings = () => {
     navigate('/dashboard/settings');
+  };
+
+  const navigateToMessages = () => {
+    navigate('/dashboard/messages');
   };
 
   const toggleDarkMode = () => {
@@ -146,6 +152,22 @@ const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
               <Sun size={20} className="text-yellow-400" />
             ) : (
               <Moon size={20} />
+            )}
+          </Button>
+
+          {/* Messages Button with Badge */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={navigateToMessages}
+            className="relative"
+            aria-label="Messages"
+          >
+            <Mail size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-blue-500 text-xs text-white flex items-center justify-center font-bold">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
             )}
           </Button>
 
