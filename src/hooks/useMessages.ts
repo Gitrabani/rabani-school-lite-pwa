@@ -9,6 +9,25 @@ export const useMessages = (threadUserId?: string) => {
   const [threads, setThreads] = useState<MessageThread[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread message count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const { count, error: err } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
+
+      if (err) throw err;
+      setUnreadCount(count || 0);
+    } catch (err) {
+      console.error('Error fetching unread count:', err);
+    }
+  }, [user?.id]);
 
   // Fetch all message threads for current user
   const fetchThreads = useCallback(async () => {
@@ -25,8 +44,9 @@ export const useMessages = (threadUserId?: string) => {
           recipient_id,
           content,
           created_at,
-          sender:profiles!sender_id(id, full_name, avatar_url),
-          recipient:profiles!recipient_id(id, full_name, avatar_url)
+          is_read,
+          sender:profiles!sender_id(id, full_name, avatar_url, role),
+          recipient:profiles!recipient_id(id, full_name, avatar_url, role)
         `
         )
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
@@ -34,7 +54,7 @@ export const useMessages = (threadUserId?: string) => {
 
       if (err) throw err;
 
-      // Process threads to get unique conversations
+      // Process threads to get unique conversations with unread counts
       const threadMap = new Map<string, MessageThread>();
 
       data?.forEach((msg) => {
@@ -48,11 +68,21 @@ export const useMessages = (threadUserId?: string) => {
             other_user_id: otherUserId,
             other_user_name: otherUser?.full_name || 'Unknown',
             other_user_avatar: otherUser?.avatar_url || null,
-            other_user_role: '', // Will be fetched separately if needed
+            other_user_role: otherUser?.role || '',
             last_message: msg.content,
             last_message_at: msg.created_at,
-            unread_count: 0, // Will be calculated from is_read flag
+            unread_count: 0,
           });
+        }
+      });
+
+      // Calculate unread count per thread
+      data?.forEach((msg) => {
+        const otherUserId =
+          msg.sender_id === user.id ? msg.recipient_id : msg.sender_id;
+        const thread = threadMap.get(otherUserId);
+        if (thread && msg.recipient_id === user.id && !msg.is_read) {
+          thread.unread_count++;
         }
       });
 
@@ -121,11 +151,14 @@ export const useMessages = (threadUserId?: string) => {
           .eq('sender_id', senderId)
           .eq('recipient_id', user.id)
           .eq('is_read', false);
+
+        // Update unread count
+        await fetchUnreadCount();
       } catch (err) {
         console.error('Error marking messages as read:', err);
       }
     },
-    [user?.id]
+    [user?.id, fetchUnreadCount]
   );
 
   // Send a message
@@ -193,6 +226,8 @@ export const useMessages = (threadUserId?: string) => {
         (payload) => {
           console.log('New message received:', payload);
           setMessages((prev) => [...prev, payload.new as Message]);
+          // Trigger notification
+          playNotificationSound();
         }
       )
       .subscribe();
@@ -202,14 +237,59 @@ export const useMessages = (threadUserId?: string) => {
     };
   }, [user?.id, threadUserId]);
 
+  // Subscribe to unread message changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`unread:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setUnreadCount((prev) => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==');
+      audio.play().catch((e) => console.log('Could not play sound:', e));
+    } catch (err) {
+      console.log('Notification sound not available');
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    if (user?.id) {
+      fetchUnreadCount();
+      fetchThreads();
+    }
+  }, [user?.id, fetchUnreadCount, fetchThreads]);
+
   return {
     messages,
     threads,
     loading,
     error,
+    unreadCount,
     fetchThreads,
     fetchMessages,
     sendMessage,
     markMessagesAsRead,
+    playNotificationSound,
   };
 };
