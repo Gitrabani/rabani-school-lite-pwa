@@ -197,6 +197,9 @@ export const useMessages = (threadUserId?: string) => {
           setMessages((prev) => [...prev, data[0]]);
         }
 
+        // Refresh threads to update thread list with new message
+        await fetchThreads();
+
         setError(null);
         return data?.[0];
       } catch (err: any) {
@@ -206,15 +209,21 @@ export const useMessages = (threadUserId?: string) => {
         throw err;
       }
     },
-    [user?.id]
+    [user?.id, fetchThreads]
   );
 
   // Subscribe to real-time message updates
   useEffect(() => {
     if (!user?.id || !threadUserId) return;
 
+    console.log(
+      `Setting up real-time subscription for user ${user.id} and thread ${threadUserId}`
+    );
+
     const channel = supabase
-      .channel(`messages:${user.id}:${threadUserId}`)
+      .channel(`messages:${user.id}:${threadUserId}`, {
+        config: { broadcast: { self: true } },
+      })
       .on(
         'postgres_changes',
         {
@@ -230,9 +239,15 @@ export const useMessages = (threadUserId?: string) => {
           playNotificationSound();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Real-time subscription status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to message updates');
+        }
+      });
 
     return () => {
+      console.log(`Unsubscribing from messages:${user.id}:${threadUserId}`);
       supabase.removeChannel(channel);
     };
   }, [user?.id, threadUserId]);
@@ -241,8 +256,12 @@ export const useMessages = (threadUserId?: string) => {
   useEffect(() => {
     if (!user?.id) return;
 
+    console.log(`Setting up unread count subscription for user ${user.id}`);
+
     const channel = supabase
-      .channel(`unread:${user.id}`)
+      .channel(`unread:${user.id}`, {
+        config: { broadcast: { self: true } },
+      })
       .on(
         'postgres_changes',
         {
@@ -252,20 +271,28 @@ export const useMessages = (threadUserId?: string) => {
           filter: `recipient_id=eq.${user.id}`,
         },
         (payload) => {
+          console.log('New message for unread count:', payload);
           setUnreadCount((prev) => prev + 1);
+          // Also refresh threads to show new message
+          fetchThreads();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Unread subscription status: ${status}`);
+      });
 
     return () => {
+      console.log(`Unsubscribing from unread:${user.id}`);
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user?.id, fetchThreads]);
 
   // Play notification sound
   const playNotificationSound = () => {
     try {
-      const audio = new Audio('data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==');
+      const audio = new Audio(
+        'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA=='
+      );
       audio.play().catch((e) => console.log('Could not play sound:', e));
     } catch (err) {
       console.log('Notification sound not available');
