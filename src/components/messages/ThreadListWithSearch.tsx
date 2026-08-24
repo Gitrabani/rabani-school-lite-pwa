@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { MessageThread } from '@/types/messaging';
 import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-react';
+import { Search, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NewMessageDialog } from './NewMessageDialog';
 
 interface ThreadListProps {
   threads: MessageThread[];
@@ -18,6 +19,7 @@ export const ThreadListWithSearch: React.FC<ThreadListProps> = ({
   isLoading,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
 
   const filteredThreads = threads.filter((thread) =>
     thread.other_user_name
@@ -26,11 +28,16 @@ export const ThreadListWithSearch: React.FC<ThreadListProps> = ({
     thread.last_message.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleNewMessage = (thread: MessageThread) => {
+    onSelectThread(thread);
+    setShowNewMessageDialog(false);
+  };
+
   return (
     <div className="flex flex-col h-full">
-      {/* Search Input */}
-      <div className="p-3 border-b relative">
-        <div className="relative">
+      {/* Header with New Message Button */}
+      <div className="p-3 border-b flex items-center gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search conversations..."
@@ -49,6 +56,14 @@ export const ThreadListWithSearch: React.FC<ThreadListProps> = ({
             </Button>
           )}
         </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setShowNewMessageDialog(true)}
+          title="Start new conversation"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Thread List */}
@@ -97,6 +112,13 @@ export const ThreadListWithSearch: React.FC<ThreadListProps> = ({
           ))
         )}
       </div>
+
+      {/* New Message Dialog */}
+      <NewMessageDialog
+        open={showNewMessageDialog}
+        onOpenChange={setShowNewMessageDialog}
+        onSelectUser={handleNewMessage}
+      />
     </div>
   );
 };
