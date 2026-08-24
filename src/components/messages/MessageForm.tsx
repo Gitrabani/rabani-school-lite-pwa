@@ -31,9 +31,15 @@ export const MessageForm: React.FC<MessageFormProps> = ({
 
     setIsSending(true);
     try {
+      console.log('Sending message:', message);
       await onSendMessage(message);
       setMessage('');
+      toast({
+        title: 'Message sent',
+        description: 'Your message was sent successfully',
+      });
     } catch (error: any) {
+      console.error('Message send error:', error);
       toast({
         variant: 'destructive',
         title: 'Failed to send message',
